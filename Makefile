@@ -1,5 +1,5 @@
-DOCKER_REGISTRY ?= 10.6.170.180/uds
-RELEASE_DOCKER_REGISTRY ?= daocloud.io/daocloud
+DOCKER_REGISTRY ?= hwameistor.io/hwameistor
+RELEASE_DOCKER_REGISTRY ?= hwameistor.io/hwameistor
 
 GO_VERSION = $(shell go version)
 BUILD_TIME = ${shell date +%Y-%m-%dT%H:%M:%SZ}
@@ -18,10 +18,10 @@ OPERATOR_CMD = operator-sdk
 RUN_CMD = go run
 K8S_CMD = kubectl
 
-BUILDER_NAME = ${DOCKER_REGISTRY}/local-storage-builder
-BUILDER_TAG = v0.1
-BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/
-BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/local-disk-manager
+BUILDER_NAME = hwameistor/builder
+BUILDER_TAG = latest
+BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/../
+BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor
 BUILDER_WORKDIR = /go/src/github.com/hwameistor/local-disk-manager
 
 DOCKER_SOCK_PATH=/var/run/docker.sock
@@ -66,8 +66,8 @@ gen-code:
 
 .PHONY: vendor
 vendor:
-	go mod tidy
-	go mod vendor
+	${DOCKER_MAKE_CMD} go mod tidy
+	${DOCKER_MAKE_CMD} go mod vendor
 
 .PHONY: clean
 clean:
@@ -80,4 +80,4 @@ clean:
 all: gen-code disk_manager_image
 
 .PHONY: release
-release: disk_manager_release 
+release: vendor disk_manager_release 
