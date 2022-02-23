@@ -1,5 +1,5 @@
-DOCKER_REGISTRY ?= 10.6.170.180/uds
-RELEASE_DOCKER_REGISTRY ?= daocloud.io/daocloud
+DOCKER_REGISTRY ?= hwameistor.io/hwameistor
+RELEASE_DOCKER_REGISTRY ?= hwameistor.io/hwameistor
 
 GO_VERSION = $(shell go version)
 BUILD_TIME = ${shell date +%Y-%m-%dT%H:%M:%SZ}
@@ -18,8 +18,8 @@ OPERATOR_CMD = operator-sdk
 RUN_CMD = go run
 K8S_CMD = kubectl
 
-BUILDER_NAME = ${DOCKER_REGISTRY}/local-storage-builder
-BUILDER_TAG = v0.1
+BUILDER_NAME = hwameistor/builder
+BUILDER_TAG = latest
 BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/
 BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/local-disk-manager
 BUILDER_WORKDIR = /go/src/github.com/hwameistor/local-disk-manager
