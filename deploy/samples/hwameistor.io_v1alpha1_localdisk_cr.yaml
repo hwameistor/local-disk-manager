@@ -1,0 +1,10 @@
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalDisk
+metadata:
+  name: localdisk-sample-11
+spec:
+  capacity: 239511535616
+  devicePath: /dev/sda
+  nodeName: 172-30-40-60
+status:
+  claimState: Unclaimed

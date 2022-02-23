@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: local-disk-manager
+spec:
+  selector:
+    matchLabels:
+      name: local-disk-manager
+  template:
+    metadata:
+      labels:
+        name: local-disk-manager
+    spec:
+      hostNetwork: true
+      hostPID: true
+      serviceAccountName: local-disk-manager
+      containers:
+        - name: local-disk-manager
+          # Replace this with the built image name
+          image: daocloud.io/daocloud/local-disk-manager:v0.1.0
+          command:
+          - /local-disk-manager
+          imagePullPolicy: Always
+          volumeMounts:
+          - name: udev
+            mountPath: /run/udev
+          - name: procmount
+            mountPath: /host/proc
+            readOnly: true
+          - name: devmount
+            mountPath: /dev
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: OPERATOR_NAME
+              value: "local-disk-manager"
+          securityContext:
+            privileged: true
+      volumes:
+      - name: udev
+        hostPath:
+          path: /run/udev
+          type: Directory
+      - name: procmount
+        # mount /proc/1/mounts (mount file of process 1 of host) inside container
+        # to read which partition is mounted on / path
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: devmount
+        # the /dev directory is mounted so that we have access to the devices that
+        # are connected at runtime of the pod.
+        hostPath:
+          path: /dev
+          type: Directory
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          operator: Exists
