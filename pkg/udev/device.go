@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hwameistor/local-disk-manager/pkg/utils"
 	"github.com/pilebones/go-udev/crawler"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/json"
 	"strings"
 )
@@ -20,7 +21,14 @@ func NewCDevice(device crawler.Device) CDevice {
 
 // FilterDisk
 func (d CDevice) FilterDisk() bool {
-	return d.Env["DEVTYPE"] == "disk"
+	device := NewDevice(d.KObj)
+	err := device.ParseDeviceInfo()
+	if err != nil {
+		log.WithError(err).Errorf("Parse device:%v fail", d)
+		return false
+	}
+
+	return device.IDType == "disk" && device.DevType == "disk"
 }
 
 // Device

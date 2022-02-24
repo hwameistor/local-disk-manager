@@ -56,8 +56,10 @@ func monitorDeviceEvent(c chan manager.Event, matchRule netlink.Matcher) error {
 			}
 
 			if !NewCDevice(crawler.Device{KObj: device.KObj, Env: device.Env}).FilterDisk() {
+				log.Debugf("Device:%+v is drop", device)
 				continue
 			}
+			log.Debugf("Device:%+v is keep", device)
 
 			c <- manager.Event{
 				Type:    string(device.Action),
@@ -91,8 +93,10 @@ func getExistDevice(matchRule netlink.Matcher) (events []manager.Event, err erro
 
 			// Filter non disk events
 			if !NewCDevice(device).FilterDisk() {
+				log.Debugf("Device:%+v is drop", device)
 				continue
 			}
+			log.Debugf("Device:%+v is keep", device)
 
 			events = append(events, manager.Event{
 				Type:    manager.EXIST,
