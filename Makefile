@@ -79,7 +79,8 @@ clean:
 .PHONY: all
 all: gen-code disk_manager_image
 
-unit-test:
+.PHONY: test
+test:
 	bash hack/unit-test.sh
 
 .PHONY: release
