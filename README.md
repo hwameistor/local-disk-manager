@@ -4,7 +4,7 @@ README: [English](https://github.com/hwameistor/local-disk-manager/blob/main/REA
 
 `local-disk-manager` (LDM) is to simplify the management of disks on nodes. It can abstract the disk on the node into a resource and can be monitored and managed. It's a daemon that will be deployed on each node, then detect the disk on the node, abstract it into local disk (LD) resources and save it to kubernetes.
 
-At present, the 'LDM' project is still in the alpha stage.
+At present, the `LDM` project is still in the alpha stage.
 
 ## Concepts
 
@@ -70,8 +70,6 @@ Check the status of claim. If there is a disk available, you will see that the s
 
 | Feature                   | Status | Release | TP Date | GA Date | Description                                                  |
 | ------------------------- | ------ | ------- | ------- | ------- | ------------------------------------------------------------ |
-| CSI                       | Planed | v0.2    |         |         | Container Storage Interface                                  |
-| CR Protection             | Planed | v0.3    |         |         | Prevent accidental deletion of resources（LD & LDC）         |
-| Handle Disk Delete Events | Planed | v0.3    |         |         | Detect and handle disk remove events                         |
-| Collect RAID Info         | Planed | v0.4    |         |         | Collect RAID Info about this disk |
-| Disk failure prediction   | Planed | v0.4    |         |         | Predict the probability of disk damage and detect health status |
+| CSI for disk volume       | Planed |         |         |         | Container Storage Interface                                  |
+| Disk management           | Planed |         |         |         | Disk management, including various events and how the system should handle them when they occur |
+| Disk health management    | Planed |         |         |         | Fault prediction, status information reporting and so on     |
