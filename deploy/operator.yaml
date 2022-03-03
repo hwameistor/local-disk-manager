@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: local-disk-manager
+  namespace: hwameistor
 spec:
   selector:
     matchLabels:
@@ -17,7 +18,7 @@ spec:
       containers:
         - name: local-disk-manager
           # Replace this with the built image name
-          image: daocloud.io/daocloud/local-disk-manager:v0.1.0
+          image: ghcr.io/hwameistor/local-disk-manager:v0.0.1
           command:
           - /local-disk-manager
           imagePullPolicy: Always

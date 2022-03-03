@@ -1,7 +1,7 @@
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalDisk
 metadata:
-  name: localdisk-sample-11
+  name: localdisk-sample
 spec:
   capacity: 239511535616
   devicePath: /dev/sda
