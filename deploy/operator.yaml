@@ -18,7 +18,7 @@ spec:
       containers:
         - name: local-disk-manager
           # Replace this with the built image name
-          image: ghcr.io/hwameistor/local-disk-manager:v0.0.1
+          image: ghcr.io/hwameistor/local-disk-manager:v0.0.2
           command:
           - /local-disk-manager
           imagePullPolicy: Always
