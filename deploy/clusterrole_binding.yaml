@@ -5,7 +5,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: local-disk-manager
-  namespace: default
+  namespace: hwameistor
 roleRef:
   kind: ClusterRole
   name: local-disk-manager

@@ -1,20 +1,12 @@
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: local-disk-manager
-rules:
-- apiGroups: ["*"]
-  resources: ["nodes", "pods", "services", "endpoints", "events", "configmaps", "secrets", "jobs"]
-  verbs:
-  - '*'
-- apiGroups: ["apiextensions.k8s.io"]
-  resources: ["customresourcedefinitions"]
-  verbs:
-  - '*'
-- apiGroups:
-  - hwameistor.io
-  resources:
-  - localdisks
-  - localdiskclaims
-  verbs:
-  - '*'
+
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: local-disk-manager
+  rules:
+    - apiGroups: [ "*" ]
+      resources:
+        - "*"
+      verbs: [ "*" ]
+    - nonResourceURLs: [ "*" ]
+      verbs: [ "*" ]
