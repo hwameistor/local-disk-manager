@@ -18,7 +18,7 @@ OPERATOR_CMD = operator-sdk
 RUN_CMD = go run
 K8S_CMD = kubectl
 
-BUILDER_NAME = hwameistor/builder
+BUILDER_NAME = hwameistor/local-disk-manager-builder
 BUILDER_TAG = latest
 BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/../
 BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor
@@ -41,7 +41,6 @@ include ./makefiles/disk-manager.mk
 .PHONY: builder
 builder:
 	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f images/builder/Dockerfile .
-	docker push ${BUILDER_NAME}:${BUILDER_TAG}
 
 .PHONY: debug
 debug:
@@ -66,8 +65,8 @@ gen-code:
 
 .PHONY: vendor
 vendor:
-	${DOCKER_MAKE_CMD} go mod tidy
-	${DOCKER_MAKE_CMD} go mod vendor
+	go mod tidy -compat=1.17
+	go mod vendor
 
 .PHONY: clean
 clean:
