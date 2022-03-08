@@ -1,18 +1,26 @@
 # local-disk-manager
+<img width="150" align='right' alt="Hwameistor Logo" src="https://avatars.githubusercontent.com/u/98022243?s=200&v=4">
 
 README: [English](https://github.com/hwameistor/local-disk-manager/blob/main/README.md) ｜ [中文](https://github.com/hwameistor/local-disk-manager/blob/main/README-zh.md)
 
-`local-disk-manager` (LDM) is to simplify the management of disks on nodes. It can abstract the disk on the node into a resource and can be monitored and managed. It's a daemon that will be deployed on each node, then detect the disk on the node, abstract it into local disk (LD) resources and save it to kubernetes.
+`local-disk-manager (LDM)` is a sub module of [HwameiStor](https://github.com/hwameistor/helm-charts). 
 
-At present, the `LDM` project is still in the alpha stage.
+LDM is to simplify the management of disks on nodes. It can abstract the disk on the node into a resource and can be monitored and managed. It's a daemon that will be deployed on each node, then detect the disk on the node, abstract it into local disk (LD) resources and save it to kubernetes.
+
+At present, the LDM project is still in the alpha stage.
 
 ## Concepts
 
-**LocalDisk**: LDM abstracts disk resources into objects in k8s. A LocalDisk (LD) resource object represents the disk resources on the host.
+**LocalDisk(LD)**: LDM abstracts disk resources into objects in k8s. A `LD` resource object represents the disk resources on the host.
 
-**LocalDiskClaim**: The way to use disk, users can add a description of the disk to select the disk to be used.
+**LocalDiskClaim(LDC)**: The way to use disk, users can add a description of the disk to select the disk to be used.
+> At present, LDC supports the following disk description options:
+> - NodeName
+> - Capacity
+> - DiskType(e.g. HDD/SSD)
 
 ## Usage
+If you want to entirely deploy HwameiStor, please refer to [here](https://github.com/hwameistor/helm-charts). If you just want to deploy LDM separately, you can refer to the following installation steps.
 
 ## Install Local Disk Manager
 
@@ -70,6 +78,10 @@ Check the status of claim. If there is a disk available, you will see that the s
 
 | Feature                   | Status | Release | TP Date | GA Date | Description                                                  |
 | ------------------------- | ------ | ------- | ------- | ------- | ------------------------------------------------------------ |
-| CSI for disk volume       | Planed |         |         |         | Container Storage Interface                                  |
-| Disk management           | Planed |         |         |         | Disk management, including various events and how the system should handle them when they occur |
+| CSI for disk volume       | Planed |         |         |         | CSI driver for provisioning Local Pvs with bare disk         |
+| Disk management           | Planed |         |         |         | Disk management, disk allocation, disk event aware processing|
 | Disk health management    | Planed |         |         |         | Fault prediction, status information reporting and so on     |
+| HA disk Volume            | Planed |         |         |         | Disk Volume with HA                                          |                                      
+
+## Feedbacks
+Please submit any feedback and issue at: [Issues](https://github.com/hwameistor/local-disk-manager/issues)
