@@ -1,20 +1,24 @@
 # local-disk-manager
+<img width="150" align='right' alt="Hwameistor Logo" src="https://avatars.githubusercontent.com/u/98022243?s=200&v=4">
 
 README: [English](https://github.com/hwameistor/local-disk-manager/blob/main/README.md) ｜ [中文](https://github.com/hwameistor/local-disk-manager/blob/main/README-zh.md)
 
-`local-disk-manager` (LDM) 旨在简化管理节点上面的磁盘。它将磁盘抽象成一种可以被管理和监控的资源。它本身是一种 Daemonset 对象，集群中每一个节点都会运行该服务，通过该服务检测存在的磁盘并将其转换成相应的资源 LocalDisk。
+`local-disk-manager (LDM)` 旨在简化管理节点上面的磁盘。它将磁盘抽象成一种可以被管理和监控的资源。它本身是一种 Daemonset 对象，集群中每一个节点都会运行该服务，通过该服务检测存在的磁盘并将其转换成相应的资源 LocalDisk。
 
-
-
-目前`LDM`还处于 `alpha` 阶段。
+目前 LDM 还处于 `alpha` 阶段。
 
 ## 基本概念
 
-**LocalDisk**: LDM 抽象的磁盘资源（缩写：LD），一个 `LD ` 代表了节点上面的一块物理磁盘。
+**LocalDisk(LD)**: LDM 抽象的磁盘资源，一个 `LD ` 代表了节点上面的一块物理磁盘。
 
-**LocalDiskClaim**: 系统使用磁盘的方式，通过创建 `Claim` 对象来向系统申请磁盘。
+**LocalDiskClaim(LDC)**: 系统使用磁盘的方式，通过创建 `LDC` 对象来向系统申请磁盘。用户可以添加一些对磁盘的描述来选择磁盘。
+> 当前阶段，LDC 支持以下对磁盘的描述选项：
+> - NodeName
+> - Capacity
+> - DiskType(e.g. HDD/SSD)
 
 ## 用法
+如果你想完整的部署 HwameiStor，请参考[这里]( https://github.com/hwameistor/helm-charts )。 如果你只是想单独部署 LDM，可以参考下面的步骤进行安装。
 
 ## 安装 Local Disk Manager
 
@@ -73,6 +77,10 @@ README: [English](https://github.com/hwameistor/local-disk-manager/blob/main/REA
 
 | Feature                | Status | Release | TP Date | GA Date | Description                                                  |
 | :--------------------- | ------ | ------- | ------- | ------- | ------------------------------------------------------------ |
-| CSI for disk volume    | Planed |         |         |         | `Disk` 模式下创建数据卷的 `CSI` 接口                         |
-| Disk management        | Planed |         |         |         | 磁盘管理，包括感知各种磁盘事件以及系统需要做何操作以处理应对该事件等等 |
-| Disk health management | Planed |         |         |         | 磁盘健康管理，包括故障预测和状态上报等等                     |
+| CSI for disk volume    | Planed |         |         |         | `Disk` 模式下创建数据卷的 `CSI` 接口                            |
+| Disk management        | Planed |         |         |         | 磁盘管理、磁盘分配、磁盘事件感知处理                              |
+| Disk health management | Planed |         |         |         | 磁盘健康管理，包括故障预测和状态上报等等                           |
+| HA disk Volume         | Planed |         |         |         | Disk 数据卷的高可用                                            |                                      
+
+## 反馈
+如果你有任何的疑问和建议，请反馈至 [Issues](https://github.com/hwameistor/local-disk-manager/issues)
