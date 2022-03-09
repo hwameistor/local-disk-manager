@@ -21,7 +21,7 @@ spec:
           image: ghcr.io/hwameistor/local-disk-manager:v0.0.2
           command:
           - /local-disk-manager
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: udev
             mountPath: /run/udev
