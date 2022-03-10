@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: local-disk-manager
+  name: hwameistor-local-disk-manager
   namespace: hwameistor
 spec:
   selector:
     matchLabels:
-      name: local-disk-manager
+      name: hwameistor-local-disk-manager
   template:
     metadata:
       labels:
-        name: local-disk-manager
+        name: hwameistor-local-disk-manager
     spec:
       hostNetwork: true
       hostPID: true
