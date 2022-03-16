@@ -37,7 +37,7 @@ var _ = ginkgo.Describe("test Local Disk Manager  ", func() {
 		})
 		ginkgo.It("Manage new disks", func() {
 			newlocalDiskNumber := 0
-			output := runInLinux("cd ..&& sh adddisk.sh")
+			output := runInLinux("sh adddisk.sh")
 			logrus.Printf("add  disk : %+v", output)
 			logrus.Printf("wait 2 minutes ")
 			time.Sleep(2 * time.Minute)
@@ -53,7 +53,7 @@ var _ = ginkgo.Describe("test Local Disk Manager  ", func() {
 			}
 			logrus.Printf("There are %d local volumes ", newlocalDiskNumber)
 
-			output = runInLinux("cd .. && sh deletedisk.sh")
+			output = runInLinux("sh deletedisk.sh")
 			logrus.Printf("delete disk : %+v", output)
 			gomega.Expect(newlocalDiskNumber).ToNot(gomega.Equal(localDiskNumber))
 

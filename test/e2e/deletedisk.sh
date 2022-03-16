@@ -1,12 +1,9 @@
 #!/bin/bash
-
 # simple scripts mng machine
-
 # link hosts
-
 export GOVC_INSECURE=1
 export GOVC_USERNAME="panyintian.fu@daocloud.io"
-export GOVC_PASSWORD="aer]ei4ohKaxeik"
+export GOVC_PASSWORD="rcZa9FY6EiwnYk8!"
 export GOVC_URL="https://192.168.1.136:443"
 export GOVC_DATACENTER="DaoCloud-NDX-Fusion"
 export GOVC_RESOURCE_POOL="e2e"
@@ -15,13 +12,10 @@ export snapshot="begin-405"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done
 # for h in hosts; do govc vm.power -on -force $h; done
-
 # govc vm.info $hosts[0].Power state
 # govc find . -type m -runtime.powerState poweredOn
 # govc find . -type m -runtime.powerState poweredOn | xargs govc vm.info
 # govc vm.info $hosts
-
-
 for h in $hosts; do
   ##查看硬盘序号
   # govc device.ls -vm $h

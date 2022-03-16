@@ -24,7 +24,7 @@ var _ = ginkgo.Describe("test Local Disk Manager installation", func() {
 		ginkgo.It("check status", func() {
 			daemonset := &appsv1.DaemonSet{}
 			daemonsetKey := k8sclient.ObjectKey{
-				Name:      "local-disk-manager",
+				Name:      "hwameistor-local-disk-manager",
 				Namespace: "hwameistor",
 			}
 
