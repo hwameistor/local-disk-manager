@@ -1,13 +1,17 @@
-# local-disk-manager
+# Local Disk Manager (LDM)
 <img width="150" align='right' alt="Hwameistor Logo" src="https://avatars.githubusercontent.com/u/98022243?s=200&v=4">
 
 README: [English](https://github.com/hwameistor/local-disk-manager/blob/main/README.md) ｜ [中文](https://github.com/hwameistor/local-disk-manager/blob/main/README-zh.md)
 
 `local-disk-manager (LDM)` is a sub module of [HwameiStor](https://github.com/hwameistor/helm-charts). 
 
-LDM is to simplify the management of disks on nodes. It can abstract the disk on the node into a resource and can be monitored and managed. It's a daemon that will be deployed on each node, then detect the disk on the node, abstract it into local disk (LD) resources and save it to kubernetes.
+Local Disk Manager (LDM) is one of modules of HwameiStor. LDM is to simplify the management of disks on nodes. It can abstract the disk on the node into a resource and can be monitored and managed. It's a daemon that will be deployed on each node, then detect the disk on the node, abstract it into local disk (LD) resources and save it to kubernetes.
 
 At present, the LDM project is still in the alpha stage.
+
+## Architecture of HwameiStor
+
+![image](https://github.com/hwameistor/local-disk-manager/blob/main/doc/design/HwameiStor-arch.png)
 
 ## Concepts
 

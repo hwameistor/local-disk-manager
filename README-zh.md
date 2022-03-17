@@ -1,11 +1,16 @@
-# local-disk-manager
+# Local Disk Manager (LDM)
 <img width="150" align='right' alt="Hwameistor Logo" src="https://avatars.githubusercontent.com/u/98022243?s=200&v=4">
 
 README: [English](https://github.com/hwameistor/local-disk-manager/blob/main/README.md) ｜ [中文](https://github.com/hwameistor/local-disk-manager/blob/main/README-zh.md)
 
-`local-disk-manager (LDM)` 旨在简化管理节点上面的磁盘。它将磁盘抽象成一种可以被管理和监控的资源。它本身是一种 Daemonset 对象，集群中每一个节点都会运行该服务，通过该服务检测存在的磁盘并将其转换成相应的资源 LocalDisk。
+Local Disk Manager是HwameiStor系统的一个重要功能模块。`local-disk-manager (LDM)` 旨在简化管理节点上面的磁盘。它将磁盘抽象成一种可以被管理和监控的资源。它本身是一种 Daemonset 对象，集群中每一个节点都会运行该服务，通过该服务检测存在的磁盘并将其转换成相应的资源 LocalDisk。
 
 目前 LDM 还处于 `alpha` 阶段。
+
+## HwameiStor系统架构图
+
+![image](https://github.com/hwameistor/local-disk-manager/blob/main/doc/design/HwameiStor-arch.png)
+
 
 ## 基本概念
 
