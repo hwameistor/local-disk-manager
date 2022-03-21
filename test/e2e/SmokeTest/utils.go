@@ -154,12 +154,12 @@ func configureEnvironment(ctx context.Context) bool {
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			err = client.Get(context.TODO(), controllerKey, controller)
+			err = client.Get(ctx, controllerKey, controller)
 			if err != nil {
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			err = client.Get(context.TODO(), schedulerKey, scheduler)
+			err = client.Get(ctx, schedulerKey, scheduler)
 			if err != nil {
 				logrus.Error(err)
 				f.ExpectNoError(err)
