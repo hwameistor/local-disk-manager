@@ -12,14 +12,14 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test Local Disk Manager  ", func() {
+var _ = ginkgo.Describe("test Local Disk Manager  ", ginkgo.Label("smokeTest"), func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
+	localDiskNumber := 0
 	ginkgo.Context("test Local Disk ", func() {
-		localDiskNumber := 0
 		ginkgo.It("Configure the base environment", func() {
-			installHwameiStorByHelm()
+			configureEnvironment(ctx)
 		})
 		ginkgo.It("Check existed Local Disk", func() {
 			localDiskList := &ldv1.LocalDiskList{}
