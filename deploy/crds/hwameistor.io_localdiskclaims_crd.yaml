@@ -11,7 +11,7 @@ spec:
     shortNames:
     - ldc
     singular: localdiskclaim
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.nodeName
@@ -131,4 +131,5 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}

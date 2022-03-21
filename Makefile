@@ -67,14 +67,15 @@ release:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${IMAGE_NAME}:${RELEASE_TAG}
 
-.PHONY: _gen-crds
-_gen-crds:
+.PHONY: _gen-apis
+_gen-apis:
 	${OPERATOR_CMD} generate k8s
 	${OPERATOR_CMD} generate crds
+	GOPROXY=https://goproxy.cn,direct /code-generator/generate-groups.sh all github.com/hwameistor/local-disk-manager/pkg/apis/client github.com/hwameistor/local-disk-manager/pkg/apis "hwameistor:v1alpha1" --go-header-file /go/src/github.com/hwameistor/local-disk-manager/build/boilerplate.go.txt
 
-.PHONY: crds
-crds:
-	${DOCKER_MAKE_CMD} make _gen-code
+.PHONY: apis
+apis:
+	${DOCKER_MAKE_CMD} make _gen-apis
 
 .PHONY: vendor
 vendor:
