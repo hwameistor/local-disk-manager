@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.BeforeSuite(func() {
+var _ = ginkgo.AfterSuite(func() {
 	output := runInLinux("sh deletedisk.sh")
 	logrus.Info("delete disk ", output)
 })
