@@ -20,7 +20,7 @@ var _ = ginkgo.Describe("test Local Disk Manager  ", ginkgo.Label("smokeTest"), 
 		output := runInLinux("sh deletedisk.sh")
 		logrus.Info("delete disk ", output)
 	})
-	ginkgo.Context("test Local Disk ", func() {
+	ginkgo.Context("test Local Disk", func() {
 		ginkgo.It("Configure the base environment", func() {
 			configureEnvironment(ctx)
 		})
