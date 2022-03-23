@@ -5,7 +5,9 @@ import (
 	"context"
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	ldv1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
+	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/hwameistor/local-disk-manager/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
@@ -70,7 +72,7 @@ func addLabels() {
 			f.ExpectNoError(err)
 		}
 
-		if _, exists := node.Labels["csi.driver.hwameistor.io/local-storage"]; !exists {
+		if _, exists := node.Labels["lvm.hwameistor.io/enable"]; !exists {
 			node.Labels["lvm.hwameistor.io/enable"] = "true"
 			logrus.Printf("adding labels ")
 			err := client.Update(context.TODO(), node)
@@ -78,7 +80,6 @@ func addLabels() {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			time.Sleep(20 * time.Second)
 		}
 
 	}
@@ -87,9 +88,104 @@ func addLabels() {
 func installHwameiStorByHelm() {
 	logrus.Infof("helm install hwameistor")
 	_ = runInLinux("cd ../helm-charts/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
-	logrus.Infof("waiting for intall hwameistor")
-	time.Sleep(1 * time.Minute)
+	time.Sleep(10 * time.Second)
 }
+
+func configureEnvironment(ctx context.Context) bool {
+	installHwameiStorByHelm()
+	addLabels()
+	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	client := f.GetClient()
+
+	localStorage := &appsv1.DaemonSet{}
+	localStorageKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-storage",
+		Namespace: "hwameistor",
+	}
+	err := client.Get(ctx, localStorageKey, localStorage)
+	if err != nil {
+		logrus.Error("%+v ", err)
+		f.ExpectNoError(err)
+	}
+
+	controller := &appsv1.Deployment{}
+	controllerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-csi-controller",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(context.TODO(), controllerKey, controller)
+	if err != nil {
+		logrus.Error("%+v ", err)
+		f.ExpectNoError(err)
+	}
+
+	scheduler := &appsv1.Deployment{}
+	schedulerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-scheduler",
+		Namespace: "hwameistor",
+	}
+
+	err = client.Get(context.TODO(), schedulerKey, scheduler)
+	if err != nil {
+		logrus.Error("%+v ", err)
+		f.ExpectNoError(err)
+	}
+
+	localDiskManager := &appsv1.DaemonSet{}
+	localDiskManagerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-disk-manager",
+		Namespace: "hwameistor",
+	}
+
+	err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+
+	}
+
+	logrus.Infof("waiting for ready")
+	ch := make(chan struct{}, 1)
+	go func() {
+		for localStorage.Status.DesiredNumberScheduled != localStorage.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) || localDiskManager.Status.DesiredNumberScheduled != localDiskManager.Status.NumberAvailable {
+			time.Sleep(10 * time.Second)
+			err := client.Get(ctx, localStorageKey, localStorage)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, controllerKey, controller)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, schedulerKey, scheduler)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+
+		}
+		ch <- struct{}{}
+	}()
+
+	select {
+	case <-ch:
+		logrus.Infof("Components are ready ")
+		return true
+	case <-time.After(5 * time.Minute):
+		logrus.Error("timeout")
+		return false
+
+	}
+
+}
+
 func uninstallHelm() {
 	logrus.Printf("helm uninstall hwameistor")
 	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
@@ -194,6 +290,7 @@ func deleteAllSC() {
 	}
 
 }
+
 func ExecInPod(config *rest.Config, namespace, podName, command, containerName string) (string, string, error) {
 	k8sCli, err := kubernetes.NewForConfig(config)
 	if err != nil {
