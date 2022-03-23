@@ -89,5 +89,10 @@ clean:
 	docker container prune -f
 	docker rmi -f $(shell docker images -f dangling=true -qa)
 
+.PHONY: unit-test
 unit-test:
 	bash test/unit-test.sh
+
+.PHONY: e2e-test
+e2e-test:
+	bash test/e2e-test.sh
