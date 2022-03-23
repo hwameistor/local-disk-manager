@@ -12,14 +12,16 @@ import (
 	"time"
 )
 
+var _ = ginkgo.BeforeSuite(func() {
+	output := runInLinux("sh deletedisk.sh")
+	logrus.Info("delete disk ", output)
+})
+
 var _ = ginkgo.Describe("test Local Disk Manager  ", ginkgo.Label("smokeTest"), func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
-	ginkgo.BeforeSuite(func() {
-		output := runInLinux("sh deletedisk.sh")
-		logrus.Info("delete disk ", output)
-	})
+
 	ginkgo.Context("test Local Disk", func() {
 		ginkgo.It("Configure the base environment", func() {
 			configureEnvironment(ctx)
