@@ -8,6 +8,7 @@ import (
 	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/hwameistor/local-disk-manager/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
@@ -45,8 +46,8 @@ func nodeList() *apiv1.NodeList {
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
-		f.ExpectNoError(err)
 		logrus.Printf("%+v ", err)
+		f.ExpectNoError(err)
 	}
 	return nodelist
 }
@@ -88,7 +89,6 @@ func addLabels() {
 func installHwameiStorByHelm() {
 	logrus.Infof("helm install hwameistor")
 	_ = runInLinux("cd ../helm-charts/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
-	time.Sleep(10 * time.Second)
 }
 
 func configureEnvironment(ctx context.Context) bool {
@@ -130,7 +130,6 @@ func configureEnvironment(ctx context.Context) bool {
 		logrus.Error("%+v ", err)
 		f.ExpectNoError(err)
 	}
-
 	localDiskManager := &appsv1.DaemonSet{}
 	localDiskManagerKey := k8sclient.ObjectKey{
 		Name:      "hwameistor-local-disk-manager",
@@ -151,17 +150,17 @@ func configureEnvironment(ctx context.Context) bool {
 			time.Sleep(10 * time.Second)
 			err := client.Get(ctx, localStorageKey, localStorage)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, controllerKey, controller)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, schedulerKey, scheduler)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
@@ -210,16 +209,15 @@ func uninstallHelm() {
 
 	}
 	logrus.Printf("waiting for uninstall hwameistor")
-	time.Sleep(1 * time.Minute)
 
 }
 
-func createLdc() {
+func createLdc(ctx context.Context) error {
 	logrus.Printf("create ldc for each node")
 	nodelist := nodeList()
+	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	client := f.GetClient()
 	for _, nodes := range nodelist.Items {
-		f := framework.NewDefaultFramework(ldapis.AddToScheme)
-		client := f.GetClient()
 		exmlocalDiskClaim := &ldv1.LocalDiskClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "localdiskclaim-" + nodes.Name,
@@ -232,61 +230,119 @@ func createLdc() {
 				},
 			},
 		}
-		err := client.Create(context.TODO(), exmlocalDiskClaim)
+		err := client.Create(ctx, exmlocalDiskClaim)
 		if err != nil {
 			logrus.Printf("Create LDC failed ：%+v ", err)
 			f.ExpectNoError(err)
 		}
 	}
-	logrus.Printf("wait 1 minutes for create ldc")
-	time.Sleep(1 * time.Minute)
+
+	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		for _, nodes := range nodelist.Items {
+			time.Sleep(3 * time.Second)
+			localDiskClaim := &ldv1.LocalDiskClaim{}
+			localDiskClaimKey := k8sclient.ObjectKey{
+				Name:      "localdiskclaim-" + nodes.Name,
+				Namespace: "kube-system",
+			}
+			err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
+	}
 
 }
 
-func deleteAllPVC() {
+func deleteAllPVC(ctx context.Context) error {
 	logrus.Printf("delete All PVC")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	pvcList := &apiv1.PersistentVolumeClaimList{}
-	err := client.List(context.TODO(), pvcList)
+	err := client.List(ctx, pvcList)
 	if err != nil {
-		logrus.Printf("get pvc list error:%+v ", err)
+		logrus.Error("get pvc list error ", err)
 		f.ExpectNoError(err)
 	}
 
 	for _, pvc := range pvcList.Items {
 		logrus.Printf("delete pvc:%+v ", pvc.Name)
-		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
+		ctx, _ := context.WithTimeout(ctx, time.Minute)
 		err := client.Delete(ctx, &pvc)
 		if err != nil {
-			logrus.Printf("delete pvc error:%+v ", err)
+			logrus.Error("delete pvc error: ", err)
 			f.ExpectNoError(err)
 		}
-		time.Sleep(30 * time.Second)
+	}
+
+	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = client.List(ctx, pvcList)
+		if err != nil {
+			logrus.Error("get pvc list error: ", err)
+			f.ExpectNoError(err)
+		}
+		if len(pvcList.Items) != 0 {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
 	}
 
 }
 
-func deleteAllSC() {
+func deleteAllSC(ctx context.Context) error {
 	logrus.Printf("delete All SC")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	scList := &storagev1.StorageClassList{}
-	err := client.List(context.TODO(), scList)
+	err := client.List(ctx, scList)
 	if err != nil {
-		logrus.Printf("get sc list error:%+v ", err)
+		logrus.Error("get sc list error:", err)
 		f.ExpectNoError(err)
 	}
 
 	for _, sc := range scList.Items {
 		logrus.Printf("delete sc:%+v ", sc.Name)
-		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
 		err := client.Delete(ctx, &sc)
 		if err != nil {
-			logrus.Printf("delete sc error:%+v ", err)
+			logrus.Error("delete sc error", err)
 			f.ExpectNoError(err)
 		}
-		time.Sleep(30 * time.Second)
+	}
+	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = client.List(ctx, scList)
+		if err != nil {
+			logrus.Error("get sc list error", err)
+			f.ExpectNoError(err)
+		}
+		if len(scList.Items) != 0 {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
 	}
 
 }
