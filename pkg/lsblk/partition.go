@@ -44,7 +44,7 @@ func (lsb LSBlk) partitionInfo() ([]manager.PartitionInfo, error) {
 		devicePath = lsb.Name
 	}
 
-	output, err := utils.Bash(fmt.Sprintf("lsblk %s --bytes --pairs --output NAME,SIZE,TYPE,PKNAME", devicePath))
+	output, err := utils.Bash(fmt.Sprintf("lsblk %s --bytes --pairs --output NAME,SIZE,TYPE,PKNAME,FSTYPE", devicePath))
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +54,11 @@ func (lsb LSBlk) partitionInfo() ([]manager.PartitionInfo, error) {
 		props := utils.ParseKeyValuePairString(item)
 		switch props["NAME"] {
 		case lsb.Name:
-			_, err = strconv.ParseUint(props["SIZE"], 10, 64)
-			if err != nil {
-				return nil, err
+			if props["FSTYPE"] != "" {
+				partitions = append(partitions, manager.PartitionInfo{
+					Name: lsb.Name,
+					Filesystem: props["FSTYPE"] ,
+				})
 			}
 
 		default:
