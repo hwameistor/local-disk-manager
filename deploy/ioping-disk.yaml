@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-disk-ioping
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    debugnode: "true"
+  volumes:
+    - name: local-disk
+      persistentVolumeClaim:
+        claimName: local-disk-pvc
+  containers:
+    - name: ioping
+      image: hpestorage/ioping:latest
+      command: [ "ioping" ]
+      args: [ "/dev/xvda" ]
+      volumeDevices:
+        - name: local-disk
+          devicePath: /dev/xvda

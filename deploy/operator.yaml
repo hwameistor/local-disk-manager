@@ -6,21 +6,54 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: hwameistor-local-disk-manager
+      app: hwameistor-local-disk-manager
   template:
     metadata:
       labels:
-        name: hwameistor-local-disk-manager
+        app: hwameistor-local-disk-manager
     spec:
       hostNetwork: true
       hostPID: true
+#      affinity:
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#              - matchExpressions:
+#                  - key: debugnode
+#                    operator: In
+#                    values:
+#                      - "true"
       serviceAccountName: local-disk-manager
       containers:
+        - name: registrar
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v1.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--v=5"
+            - "--csi-address=/csi/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/disk.hwameistor.io/csi.sock"
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "/bin/sh", "-c", "rm -rf /registration/lvm.hwameistor.io  /registration/disk.hwameistor.io-reg.sock" ]
+          env:
+              - name: KUBE_NODE_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
         - name: local-disk-manager
           # Replace this with the built image name
-          image: ghcr.io/hwameistor/local-disk-manager:v0.0.2
+          image: ghcr.io/hwameistor/local-disk-manager:v0.0.3-20220518164903
           command:
           - /local-disk-manager
+          args:
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodeid=$(NODENAME)"
           imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: udev
@@ -30,7 +63,17 @@ spec:
             readOnly: true
           - name: devmount
             mountPath: /dev
+          - name: registration-dir
+            mountPath: /var/lib/kubelet/plugins_registry
+          - name: plugin-dir
+            mountPath: /var/lib/kubelet/plugins
+            mountPropagation: "Bidirectional"
+          - name: pods-mount-dir
+            mountPath: /var/lib/kubelet/pods
+            mountPropagation: "Bidirectional"
           env:
+            - name: CSI_ENDPOINT
+              value: unix://var/lib/kubelet/plugins/disk.hwameistor.io/csi.sock
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -68,6 +111,22 @@ spec:
         hostPath:
           path: /dev
           type: Directory
+      - name: socket-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins/disk.hwameistor.io
+          type: DirectoryOrCreate
+      - name: registration-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry/
+          type: Directory
+      - name: plugin-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins
+          type: DirectoryOrCreate
+      - name: pods-mount-dir
+        hostPath:
+          path: /var/lib/kubelet/pods
+          type: DirectoryOrCreate
       tolerations:
         - key: CriticalAddonsOnly
           operator: Exists

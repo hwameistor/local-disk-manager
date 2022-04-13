@@ -5,6 +5,6 @@ metadata:
 spec:
   capacity: 239511535616
   devicePath: /dev/sda
-  nodeName: 172-30-40-60
+  nodeName: 172-30-40-52
 status:
   claimState: Unclaimed

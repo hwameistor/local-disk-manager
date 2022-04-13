@@ -5,12 +5,21 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/hwameistor/local-disk-manager/pkg/controller"
-	"github.com/hwameistor/local-disk-manager/pkg/disk"
 	"os"
 	"path"
 	"runtime"
 	"strings"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+
+	ldm "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
+	runtime2 "k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/hwameistor/local-disk-manager/pkg/controller"
+	"github.com/hwameistor/local-disk-manager/pkg/csi/driver"
+	"github.com/hwameistor/local-disk-manager/pkg/disk"
+	"github.com/operator-framework/operator-sdk/pkg/leader"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -21,7 +30,6 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
-	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
@@ -40,6 +48,7 @@ var (
 	metricsHost               = "0.0.0.0"
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
+	csiCfg              driver.Config
 )
 var log = logf.Log.WithName("cmd")
 
@@ -54,6 +63,8 @@ func main() {
 	// Add the zap logger flag set to the CLI. The flag set must
 	// be added before calling pflag.Parse().
 	pflag.CommandLine.AddFlagSet(zap.FlagSet())
+
+	registerCSIParams()
 
 	// Add flags registered by imported packages (e.g. glog and
 	// controller-runtime)
@@ -81,52 +92,69 @@ func main() {
 	}
 	setupLogging()
 
-	// Set default manager options
-	options := manager.Options{
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
-	}
-
-	// Create a new manager to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, options)
+	// Create Cluster Manager
+	clusterMgr, err := newClusterManager(cfg)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
-	log.Info("Registering Components.")
-	// Setup Scheme for all resources
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
+	// Create Node Manager
+	nodeMgr, err := newNodeManager(cfg)
+	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
 	log.Info("starting monitor disk")
-	go disk.NewController(mgr).StartMonitor()
+	go disk.NewController(clusterMgr).StartMonitor()
+
+	log.Info("starting Disk CSI Driver")
+	go driver.NewDiskDriver(csiCfg).Run()
 
 	ctx := context.TODO()
-	// Become the leader before proceeding
-	err = leader.Become(ctx, "local-disk-manager-lock")
-	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
 	// Add the Metrics Service
 	addMetrics(ctx, cfg)
 
-	log.Info("Starting the Cmd.")
+	stopCh := signals.SetupSignalHandler()
+	// Start Cluster Controller
+	go startClusterController(ctx, clusterMgr, stopCh)
 
-	// Start the Cmd
-	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		log.Error(err, "Manager exited non-zero")
+	// Start Node Controller
+	go startNodeController(ctx, nodeMgr, stopCh)
+	select {
+	case <-stopCh:
+		log.Info("Receive exit signal.")
+		time.Sleep(3 * time.Second)
 		os.Exit(1)
 	}
+}
+
+func startClusterController(ctx context.Context, mgr manager.Manager, c <-chan struct{}) {
+	// Become the leader before proceeding
+	err := leader.Become(ctx, "local-disk-manager-lock")
+	if err != nil {
+		log.Error(err, "Failed to get lock")
+		os.Exit(1)
+	}
+
+	log.Info("Starting the Cluster Cmd.")
+	// Start the Cmd
+	if err := mgr.Start(c); err != nil {
+		log.Error(err, "Failed to start Cluster Cmd")
+		os.Exit(1)
+	}
+}
+
+func startNodeController(ctx context.Context, mgr manager.Manager, stopCh <-chan struct{}) {
+	log.Info("Starting the Node Cmd.")
+	// Start the Cmd
+	if err := mgr.Start(stopCh); err != nil {
+		log.Error(err, "Failed to start Node Cmd")
+
+	}
+
+	os.Exit(1)
 }
 
 // addMetrics will create the Services and Service Monitors to allow the operator export the metrics by using
@@ -209,4 +237,90 @@ func setupLogging() {
 			return funcName, fmt.Sprintf("%s:%d", fileName, f.Line)
 		}})
 	logr.SetReportCaller(true)
+}
+
+func registerCSIParams() {
+	flag.StringVar(&csiCfg.Endpoint, "endpoint", "unix://csi/csi.sock", "CSI endpoint")
+	flag.StringVar(&csiCfg.DriverName, "drivername", "disk.hwameistor.io", "name of the driver")
+	flag.StringVar(&csiCfg.NodeID, "nodeid", "", "node id")
+
+	(&csiCfg).VendorVersion = driver.VendorVersion
+}
+
+func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
+	// Set default manager options
+	options := manager.Options{
+		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+	}
+
+	// Create a new manager to provide shared dependencies and start components
+	mgr, err := manager.New(cfg, options)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("Registering Cluster Components.")
+	// Setup Scheme for all resources
+	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		return nil, err
+	}
+
+	// Setup all Controllers
+	if err := controller.AddToManager(mgr); err != nil {
+		return nil, err
+	}
+
+	return mgr, nil
+}
+
+func newNodeManager(cfg *rest.Config) (manager.Manager, error) {
+	// Set default manager options
+	options := manager.Options{
+		MetricsBindAddress: "0",
+	}
+
+	// Create a new manager to provide shared dependencies and start components
+	mgr, err := manager.New(cfg, options)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("Registering Node Components.")
+	// Setup Scheme for node resources
+	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		return nil, err
+	}
+
+	// Setup Cache for field index
+	setIndexField(mgr.GetCache())
+
+	// Setup node Controllers
+	if err := controller.AddToNodeManager(mgr); err != nil {
+		return nil, err
+	}
+
+	return mgr, nil
+}
+
+// setIndexField must be called after scheme has been added
+func setIndexField(cache cache.Cache) {
+	indexes := []struct {
+		field string
+		Func  func(runtime2.Object) []string
+	}{
+		{
+			field: "spec.nodeName",
+			Func: func(obj runtime2.Object) []string {
+				return []string{obj.(*ldm.LocalDisk).Spec.NodeName}
+			},
+		},
+	}
+
+	for _, index := range indexes {
+		if err := cache.IndexField(context.Background(), &ldm.LocalDisk{}, index.field, index.Func); err != nil {
+			log.Error(err, "failed to setup index field %s", index.field)
+			continue
+		}
+		log.Info("setup index field successfully", "field", index.field)
+	}
 }

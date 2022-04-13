@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-fs-ioping
+spec:
+  schedulerName: hwameistor-scheduler
+  restartPolicy: Never
+  nodeSelector:
+    debugnode: "true"
+  volumes:
+    - name: local-filesystem
+      persistentVolumeClaim:
+        claimName: local-fs-pvc
+  containers:
+    - name: perfrunner
+      image: hpestorage/ioping:latest
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash"]
+      args: ["-c", "while true ;do echo $(date) >> /data/time.log;sleep 5; done"]
+      volumeMounts:
+        - mountPath: /data
+          name: local-filesystem
+      tty: true
