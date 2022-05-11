@@ -14,7 +14,6 @@ export snapshot="e2etest"
 # govc find . -type m -runtime.powerState poweredOn | xargs govc vm.info
 # govc vm.info $hosts
 
-set -e
 for h in $hosts; do
   if [[ `govc vm.info $h | grep poweredOn | wc -l` -eq 1 ]]; then
     govc vm.power -off -force $h
@@ -34,4 +33,32 @@ for i in `seq 1 15`; do
   sleep 6s
 done
 git clone https://github.com/hwameistor/helm-charts.git test/helm-charts
-ginkgo --fail-fast --label-filter="smokeTest" test/e2e
+cat test/helm-charts/charts/hwameistor/values.yaml | while read line
+##
+do
+    result=$(echo $line | grep "imageRepository")
+    if [[ "$result" != "" ]]
+    then
+        img=${line:17:50}
+    fi
+    result=$(echo $line | grep "tag")
+    if [[ "$result" != "" ]]
+    then
+        hwamei=$(echo $img | grep "hwameistor")
+        if [[ "$hwamei" != "" ]]
+        then
+            image=$img:${line:5:50}
+            echo "docker pull ghcr.io/$image"
+            docker pull ghcr.io/$image
+            echo "docker tag ghcr.io/$image 10.6.170.180/$image"
+            docker tag ghcr.io/$image 10.6.170.180/$image
+            echo "docker push 10.6.170.180/$image"
+            docker push 10.6.170.180/$image
+        fi
+    fi
+done
+##
+sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: 10.6.170.180' test/helm-charts/charts/hwameistor/values.yaml
+sed -i '/hwameistor\/local-disk-manager/{n;d}' test/helm-charts/charts/hwameistor/values.yaml
+sed -i '/hwameistor\/local-disk-manager/a \ \ tag: 99.9-dev' test/helm-charts/charts/hwameistor/values.yaml
+ginkgo --fail-fast --label-filter=${E2E_TESTING_LEVEL} test/e2e
