@@ -1,64 +1,28 @@
-#! /usr/bin/env bash
+#!/bin/bash
 # simple scripts mng machine
 # link hosts
 export GOVC_INSECURE=1
+export GOVC_USERNAME="panyintian.fu@daocloud.io"
+export GOVC_PASSWORD="rcZa9FY6EiwnYk8!"
+export GOVC_URL="https://192.168.1.136:443"
+export GOVC_DATACENTER="DaoCloud-NDX-Fusion"
 export GOVC_RESOURCE_POOL="e2e"
-export hosts="fupan-e2e-k8s-master fupan-e2e-k8s-node1 fupan-e2e-k8s-node2"
-export snapshot="e2etest"
+export hosts="fupan-e2e-k8s-node1"
+export snapshot="begin-405"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done
 # for h in hosts; do govc vm.power -on -force $h; done
-
 # govc vm.info $hosts[0].Power state
 # govc find . -type m -runtime.powerState poweredOn
 # govc find . -type m -runtime.powerState poweredOn | xargs govc vm.info
 # govc vm.info $hosts
-
 for h in $hosts; do
-  if [[ `govc vm.info $h | grep poweredOn | wc -l` -eq 1 ]]; then
-    govc vm.power -off -force $h
-    echo -e "\033[35m === $h has been down === \033[0m"
-  fi
-
-  govc snapshot.revert -vm $h $snapshot
-  echo -e "\033[35m === $h reverted to snapshot: `govc snapshot.tree -vm $h -C -D -i -d` === \033[0m"
-
-  govc vm.power -on $h
-  echo -e "\033[35m === $h: power turned on === \033[0m"
+  ##创建硬盘
+  govc vm.disk.create -vm $h -name $h/newdisk -ds="172-30-43-22-DataStore" -size 10G
+  ##查看硬盘序号
+  #govc device.ls -vm $h
+  ##删除硬盘
+  #govc device.remove -vm $h -keep=false disk-1000-2
+  ##修改磁盘大小
+  govc vm.disk.change -vm $h -disk.name "disk-1000-2" -size 12G
 done
-
-echo -e "\033[35m === task will end in 1m 30s === \033[0m"
-for i in `seq 1 15`; do
-  echo -e "\033[35m === `date  '+%Y-%m-%d %H:%M:%S'` === \033[0m"
-  sleep 6s
-done
-git clone https://github.com/hwameistor/helm-charts.git test/helm-charts
-cat test/helm-charts/charts/hwameistor/values.yaml | while read line
-##
-do
-    result=$(echo $line | grep "imageRepository")
-    if [[ "$result" != "" ]]
-    then
-        img=${line:17:50}
-    fi
-    result=$(echo $line | grep "tag")
-    if [[ "$result" != "" ]]
-    then
-        hwamei=$(echo $img | grep "hwameistor")
-        if [[ "$hwamei" != "" ]]
-        then
-            image=$img:${line:5:50}
-            echo "docker pull ghcr.io/$image"
-            docker pull ghcr.io/$image
-            echo "docker tag ghcr.io/$image 10.6.170.180/$image"
-            docker tag ghcr.io/$image 10.6.170.180/$image
-            echo "docker push 10.6.170.180/$image"
-            docker push 10.6.170.180/$image
-        fi
-    fi
-done
-##
-sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: 10.6.170.180' test/helm-charts/charts/hwameistor/values.yaml
-sed -i '/hwameistor\/local-disk-manager/{n;d}' test/helm-charts/charts/hwameistor/values.yaml
-sed -i '/hwameistor\/local-disk-manager/a \ \ tag: 99.9-dev' test/helm-charts/charts/hwameistor/values.yaml
-ginkgo --fail-fast --label-filter=${E2E_TESTING_LEVEL} test/e2e

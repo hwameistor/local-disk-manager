@@ -36,12 +36,12 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
 		})
 		ginkgo.It("Manage new disks", func() {
 			output := runInLinux("sh adddisk.sh")
-			logrus.Printf("add  disk : %+v", output)
+			logrus.Info("add  disk :", output)
 			err := wait.PollImmediate(3*time.Second, 5*time.Minute, func() (done bool, err error) {
 				localDiskList := &ldv1.LocalDiskList{}
 				err = client.List(ctx, localDiskList)
 				if err != nil {
-					f.ExpectNoError(err)
+					logrus.Error("add disk failed")
 					logrus.Error(err)
 				}
 				if len(localDiskList.Items) != 7 {
