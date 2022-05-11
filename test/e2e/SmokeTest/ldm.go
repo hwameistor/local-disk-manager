@@ -17,7 +17,7 @@ var _ = ginkgo.AfterSuite(func() {
 	logrus.Info("delete disk ", output)
 })
 
-var _ = ginkgo.Describe("test Local Disk Manager  ", ginkgo.Label("smokeTest"), func() {
+var _ = ginkgo.Describe("test Local Disk Manager  ", ginkgo.Label("pr"), func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
