@@ -226,21 +226,20 @@ func createLdc(ctx context.Context) error {
 	}
 
 	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-		for _, nodes := range nodelist.Items {
-			time.Sleep(3 * time.Second)
-			localDiskClaim := &ldv1.LocalDiskClaim{}
-			localDiskClaimKey := k8sclient.ObjectKey{
-				Name:      "localdiskclaim-" + nodes.Name,
-				Namespace: "kube-system",
-			}
-			err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
-			if err != nil {
-				logrus.Error(err)
-				f.ExpectNoError(err)
-			}
-			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
-				return false, nil
-			}
+
+		time.Sleep(3 * time.Second)
+		localDiskClaim := &ldv1.LocalDiskClaim{}
+		localDiskClaimKey := k8sclient.ObjectKey{
+			Name:      "localdiskclaim-k8s-node1",
+			Namespace: "kube-system",
+		}
+		err = client.Get(ctx, localDiskClaimKey, localDiskClaim)
+		if err != nil {
+			logrus.Error(err)
+			f.ExpectNoError(err)
+		}
+		if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
+			return false, nil
 		}
 		return true, nil
 	})
