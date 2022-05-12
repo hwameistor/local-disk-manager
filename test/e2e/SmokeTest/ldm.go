@@ -32,7 +32,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
 				f.ExpectNoError(err)
 			}
 			logrus.Printf("There are %d local volumes ", len(localDiskList.Items))
-			gomega.Expect(len(localDiskList.Items)).To(gomega.Equal(6))
+			gomega.Expect(len(localDiskList.Items)).To(gomega.Equal(9))
 		})
 		ginkgo.It("Manage new disks", func() {
 			output := runInLinux("sh adddisk.sh")
@@ -44,7 +44,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
 					logrus.Error("add disk failed")
 					logrus.Error(err)
 				}
-				if len(localDiskList.Items) != 7 {
+				if len(localDiskList.Items) != 10 {
 					return false, nil
 				} else {
 					logrus.Infof("There are %d local volumes ", len(localDiskList.Items))
