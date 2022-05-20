@@ -33,7 +33,6 @@ type LocalDiskClaimStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalDiskClaim is the Schema for the localdiskclaims API
-//+kubebuilder:subresource:status
 //+kubebuilder:validation:Required
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string

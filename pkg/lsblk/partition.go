@@ -56,8 +56,8 @@ func (lsb LSBlk) partitionInfo() ([]manager.PartitionInfo, error) {
 		case lsb.Name:
 			if props["FSTYPE"] != "" {
 				partitions = append(partitions, manager.PartitionInfo{
-					Name: lsb.Name,
-					Filesystem: props["FSTYPE"] ,
+					Name:       lsb.Name,
+					Filesystem: props["FSTYPE"],
 				})
 			}
 

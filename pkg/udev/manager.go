@@ -13,6 +13,10 @@ import (
 type DiskManager struct {
 }
 
+func NewDiskManager() DiskManager {
+	return DiskManager{}
+}
+
 // ListExist
 func (dm DiskManager) ListExist() []manager.Event {
 	events, err := getExistDevice(GenRuleForBlock())

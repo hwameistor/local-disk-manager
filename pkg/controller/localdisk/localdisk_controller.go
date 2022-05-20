@@ -2,18 +2,18 @@ package localdisk
 
 import (
 	"context"
-	"github.com/hwameistor/local-disk-manager/pkg/filter"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/tools/reference"
 
 	hwameistorv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/local-disk-manager/pkg/filter"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -180,6 +180,19 @@ func (ldHandler *LocalDiskHandler) ListLocalDisk() (*ldmv1alpha1.LocalDiskList, 
 	return list, err
 }
 
+// ListNodeLocalDisk
+func (ldHandler *LocalDiskHandler) ListNodeLocalDisk(node string) (*ldmv1alpha1.LocalDiskList, error) {
+	list := &ldmv1alpha1.LocalDiskList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "LocalDisk",
+			APIVersion: "v1alpha1",
+		},
+	}
+	nodeMatcher := client.MatchingField("spec.nodeName", node)
+	err := ldHandler.List(context.TODO(), list, nodeMatcher)
+	return list, err
+}
+
 // For
 func (ldHandler *LocalDiskHandler) For(ld ldmv1alpha1.LocalDisk) *LocalDiskHandler {
 	ldHandler.ld = ld
@@ -187,7 +200,7 @@ func (ldHandler *LocalDiskHandler) For(ld ldmv1alpha1.LocalDisk) *LocalDiskHandl
 	return ldHandler
 }
 
-// Bounded
+// UnClaimed Bounded
 func (ldHandler *LocalDiskHandler) UnClaimed() bool {
 	return !ldHandler.filter.
 		Init().
