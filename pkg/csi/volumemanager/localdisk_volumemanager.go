@@ -233,16 +233,13 @@ func (vm *LocalDiskVolumeManager) NodePublishVolume(ctx context.Context, volumeR
 
 	// update mountPoint to LocalVolume
 	exist := volume.ExistMountPoint(r.GetTargetPath())
-	if exist {
-		log.Infof("MountPoint %s is already exist in LocalDiskVolume %s, no operation here",
-			r.GetTargetPath(), r.GetVolumeId())
-		return nil
-	}
-	volume.AppendMountPoint(r.GetTargetPath(), r.GetVolumeCapability())
-	volume.SetupVolumeStatus(v1alpha1.VolumeStateNotReady)
+	if !exist {
+		volume.AppendMountPoint(r.GetTargetPath(), r.GetVolumeCapability())
+		volume.SetupVolumeStatus(v1alpha1.VolumeStateNotReady)
 
-	if err := volume.UpdateLocalDiskVolume(); err != nil {
-		return err
+		if err = volume.UpdateLocalDiskVolume(); err != nil {
+			return err
+		}
 	}
 
 	return volume.WaitVolume(ctx, v1alpha1.VolumeStateReady)
@@ -274,6 +271,10 @@ func (vm *LocalDiskVolumeManager) NodeUnpublishVolume(ctx context.Context,
 func (vm *LocalDiskVolumeManager) DeleteVolume(ctx context.Context, name string) error {
 	volume, err := vm.newHandlerForVolume(name)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Infof("Volume %s is deleted already", name)
+			return nil
+		}
 		return err
 	}
 
