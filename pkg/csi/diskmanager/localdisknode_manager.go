@@ -107,7 +107,8 @@ func (ldn *LocalDiskNodesManager) GetNodeDisks(node string) ([]*Disk, error) {
 }
 
 func (ldn *LocalDiskNodesManager) filterNotReservedDisk(reqDisk, existDisk Disk) bool {
-	if existDisk.Status != DiskStatusUnclaimed {
+	if !(existDisk.Status == DiskStatusUnclaimed ||
+		existDisk.Status == DiskStatusReleased) {
 		return false
 	}
 	if existDisk.DiskType == reqDisk.DiskType &&
