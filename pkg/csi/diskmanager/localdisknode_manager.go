@@ -34,6 +34,11 @@ type LocalDiskNodesManager struct {
 }
 
 func (ldn *LocalDiskNodesManager) ReleaseDisk(diskName string) error {
+	ld, err := ldn.DiskHandler.GetLocalDisk(client.ObjectKey{Name: diskName})
+	if err != nil {
+		return err
+	}
+	ldn.DiskHandler.For(*ld)
 	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskReleased)
 	return ldn.DiskHandler.UpdateStatus()
 }
