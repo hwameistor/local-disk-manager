@@ -1,13 +1,21 @@
 package SmokeTest
 
 import (
+	"bytes"
 	"context"
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	ldv1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
+	"strings"
 
 	"github.com/hwameistor/local-disk-manager/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
@@ -18,6 +26,52 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
+
+func int32Ptr(i int32) *int32 { return &i }
+
+func boolPter(i bool) *bool { return &i }
+
+func ExecInPod(config *rest.Config, namespace, podName, command, containerName string) (string, string, error) {
+	k8sCli, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return "", "", err
+	}
+	cmd := []string{
+		"sh",
+		"-c",
+		command,
+	}
+	const tty = false
+	req := k8sCli.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace(namespace).SubResource("exec").Param("container", containerName)
+	req.VersionedParams(
+		&v1.PodExecOptions{
+			Command: cmd,
+			Stdin:   false,
+			Stdout:  true,
+			Stderr:  true,
+			TTY:     tty,
+		},
+		scheme.ParameterCodec,
+	)
+
+	var stdout, stderr bytes.Buffer
+	myExec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return "", "", err
+	}
+	err = myExec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+}
 
 func runInLinux(cmd string) string {
 	result, err := exec.Command("/bin/sh", "-c", cmd).Output()
@@ -243,6 +297,88 @@ func createLdc(ctx context.Context) error {
 			}
 		}
 		return true, nil
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
+	}
+
+}
+
+func deleteAllPVC(ctx context.Context) error {
+	logrus.Printf("delete All PVC")
+	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	client := f.GetClient()
+	pvcList := &apiv1.PersistentVolumeClaimList{}
+	err := client.List(ctx, pvcList)
+	if err != nil {
+		logrus.Error("get pvc list error ", err)
+		f.ExpectNoError(err)
+	}
+
+	for _, pvc := range pvcList.Items {
+		logrus.Printf("delete pvc:%+v ", pvc.Name)
+		ctx, _ := context.WithTimeout(ctx, time.Minute)
+		err := client.Delete(ctx, &pvc)
+		if err != nil {
+			logrus.Error("delete pvc error: ", err)
+			f.ExpectNoError(err)
+		}
+	}
+
+	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = client.List(ctx, pvcList)
+		if err != nil {
+			logrus.Error("get pvc list error: ", err)
+			f.ExpectNoError(err)
+		}
+		if len(pvcList.Items) != 0 {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
+	}
+
+}
+
+func deleteAllSC(ctx context.Context) error {
+	logrus.Printf("delete All SC")
+	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	client := f.GetClient()
+	scList := &storagev1.StorageClassList{}
+	err := client.List(ctx, scList)
+	if err != nil {
+		logrus.Error("get sc list error:", err)
+		f.ExpectNoError(err)
+	}
+
+	for _, sc := range scList.Items {
+		logrus.Printf("delete sc:%+v ", sc.Name)
+		err := client.Delete(ctx, &sc)
+		if err != nil {
+			logrus.Error("delete sc error", err)
+			f.ExpectNoError(err)
+		}
+	}
+	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = client.List(ctx, scList)
+		if err != nil {
+			logrus.Error("get sc list error", err)
+			f.ExpectNoError(err)
+		}
+		if len(scList.Items) != 0 {
+			return false, nil
+		} else {
+			return true, nil
+		}
 	})
 	if err != nil {
 		logrus.Error(err)

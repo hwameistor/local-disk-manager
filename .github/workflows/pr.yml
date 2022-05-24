@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: delete
         run: |
-          sudo rm -rf /github/actions-runner/_work/local-disk-manager/local-disk-manager/_build
+          sudo rm -rf /github/actions-runner/_work/local-disk-manager/local-disk-manager
       - name: Checkout
         uses: actions/checkout@v2
         with:
