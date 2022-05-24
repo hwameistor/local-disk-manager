@@ -30,7 +30,6 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("pr"), ginkgo.
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.Equal(true))
-		createLdc(ctx)
 
 	})
 	ginkgo.Context("create a StorageClass", func() {
