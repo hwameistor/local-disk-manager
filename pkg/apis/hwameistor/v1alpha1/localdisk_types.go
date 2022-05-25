@@ -21,10 +21,58 @@ type PartitionInfo struct {
 	FileSystem FileSystemInfo `json:"filesystem,omitempty"`
 }
 
+type RaidType string
+
+const (
+	RaidType0 RaidType = "RAID0"
+
+	RaidType1 RaidType = "RAID1"
+
+	RaidType5 RaidType = "RAID5"
+)
+
+type RAIDState string
+
+const (
+	RAIDStateDgrd RAIDState = "Dgrd"
+
+	RAIDStateOptl RAIDState = "Optl"
+)
+
+type RAIDDiskState string
+
+const (
+	RAIDDiskStateUGood RAIDDiskState = "UGood"
+
+	RAIDDiskStateUBad RAIDDiskState = "UBad"
+
+	RAIDDiskStateOnln RAIDDiskState = "Onln"
+
+	RAIDDiskStateOffln RAIDDiskState = "Offln"
+
+	RAIDDiskStateMissing RAIDDiskState = "Missing"
+
+	RAIDDiskStateRbld RAIDDiskState = "Rbld"
+)
+
+type RaidDisk struct {
+	DriveGroup        string        `json:"driveGroup,omitempty"`
+	EnclosureDeviceID string        `json:"enclosureDeviceID,omitempty"`
+	SlotNo            string        `json:"slotNo,omitempty"`
+	DeviceID          string        `json:"deviceID,omitempty"`
+	MediaType         string        `json:"mediaType,omitempty"`
+	RAIDDiskState     RAIDDiskState `json:"raidDiskState,omitempty"`
+}
+
 // RAIDInfo contains infos of raid
 type RAIDInfo struct {
 	// RAIDMaster is the master of the RAID disk, it works for only RAID slave disk, e.g. /dev/bus/0
-	RAIDMaster string `json:"raidMaster,omitempty"`
+	//RaidMaster string    `json:"raidMaster,omitempty"`
+	RaidName  string    `json:"raidName,omitempty"`
+	RaidType  RaidType  `json:"raidType,omitempty"`
+	RaidState RAIDState `json:"raidState,omitempty"`
+	// PD LIST
+	RaidDiskList []RaidDisk `json:"raidDiskList,omitempty"`
 }
 
 // DiskAttributes represent certain hardware/static attributes of the disk
