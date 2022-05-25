@@ -32,6 +32,9 @@ func NewController(mgr crmanager.Manager) *Controller {
 
 // StartMonitor
 func (ctr Controller) StartMonitor() {
+	// Wait cache synced
+	ctr.localDiskController.Mgr.GetCache().WaitForCacheSync(make(chan struct{}))
+
 	// Start event handler
 	go ctr.HandleEvent()
 
@@ -68,7 +71,7 @@ func (ctr Controller) HandleEvent() {
 
 			// Judge whether the disk is completely new
 			if ctr.localDiskController.IsAlreadyExist(ld) {
-				log.Debugf("Disk %v has been already exist", newDisk)
+				log.Debugf("Disk %+v has been already exist", newDisk)
 				// If the disk already exists, try to update
 				if err := ctr.localDiskController.UpdateLocalDisk(ld); err != nil {
 					log.WithError(err).Errorf("Update LocalDisk fail for disk %v", newDisk)
