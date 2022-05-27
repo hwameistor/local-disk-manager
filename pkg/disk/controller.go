@@ -66,6 +66,7 @@ func (ctr Controller) HandleEvent() {
 			// Get disk basic info
 			newDisk := DiskParser.ParseDisk()
 			log.Infof("Disk %v basicinfo: %v", event.DevPath, newDisk)
+
 			// Convert disk resource to LocalDisk
 			ld := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
 
@@ -97,6 +98,6 @@ func defaultDiskParser() *manager.DiskParser {
 	return manager.NewDiskParser(
 		diskBase,
 		lsblk.NewPartitionParser(diskBase),
-		manager.RaidParser{},
+		manager.NewRaidParser(diskBase),
 		lsblk.NewAttributeParser(diskBase))
 }

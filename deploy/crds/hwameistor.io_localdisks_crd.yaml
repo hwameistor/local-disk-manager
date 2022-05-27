@@ -182,6 +182,8 @@ spec:
                           type: string
                         mediaType:
                           type: string
+                        raidDiskState:
+                          type: string
                         slotNo:
                           type: string
                       type: object

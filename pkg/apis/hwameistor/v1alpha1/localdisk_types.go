@@ -56,11 +56,12 @@ const (
 )
 
 type RaidDisk struct {
-	DriveGroup        string `json:"driveGroup,omitempty"`
-	EnclosureDeviceID string `json:"enclosureDeviceID,omitempty"`
-	SlotNo            string `json:"slotNo,omitempty"`
-	DeviceID          string `json:"deviceID,omitempty"`
-	MediaType         string `json:"mediaType,omitempty"`
+	DriveGroup        string        `json:"driveGroup,omitempty"`
+	EnclosureDeviceID string        `json:"enclosureDeviceID,omitempty"`
+	SlotNo            string        `json:"slotNo,omitempty"`
+	DeviceID          string        `json:"deviceID,omitempty"`
+	MediaType         string        `json:"mediaType,omitempty"`
+	RAIDDiskState     RAIDDiskState `json:"raidDiskState,omitempty"`
 }
 
 // RAIDInfo contains infos of raid
