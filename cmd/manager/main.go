@@ -109,7 +109,7 @@ func main() {
 	stopCh := signals.SetupSignalHandler()
 
 	log.Info("starting monitor disk")
-	go disk.NewController(clusterMgr).StartMonitor()
+	go disk.NewController(nodeMgr).StartMonitor()
 
 	log.Info("starting Disk CSI Driver")
 	go driver.NewDiskDriver(csiCfg).Run()
