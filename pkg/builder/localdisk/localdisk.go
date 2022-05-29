@@ -2,6 +2,7 @@ package localdisk
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-disk-manager/pkg/disk/manager"
@@ -44,14 +45,20 @@ func (builder *Builder) SetupAttribute(attribute manager.Attribute) *Builder {
 }
 
 func (builder *Builder) SetupRaidInfo(raid manager.RaidInfo) *Builder {
+	log.Infof("debug builder.errs = %v", builder.errs)
+
 	if builder.errs != nil {
 		return builder
 	}
+
+	log.Infof("debug SetupRaidInfo = %v", raid)
 
 	builder.disk.Spec.HasRAID = raid.HasRaid
 	builder.disk.Spec.RAIDInfo.RaidType = v1alpha1.RaidType(raid.RaidType)
 	builder.disk.Spec.RAIDInfo.RaidState = v1alpha1.RAIDState(raid.RaidState)
 	builder.disk.Spec.RAIDInfo.RaidName = raid.RaidName
+
+	log.Infof("debug builder.disk.Spec.RAIDInfo 1= %v", builder.disk.Spec.RAIDInfo)
 
 	var rdList []v1alpha1.RaidDisk
 	for _, raidDisk := range raid.RaidDiskList {
@@ -66,6 +73,9 @@ func (builder *Builder) SetupRaidInfo(raid manager.RaidInfo) *Builder {
 	}
 
 	builder.disk.Spec.RAIDInfo.RaidDiskList = rdList
+
+	log.Infof("debug builder.disk.Spec.RAIDInfo 2= %v", builder.disk.Spec.RAIDInfo)
+
 	// complete RAID INFO here
 	return builder
 }

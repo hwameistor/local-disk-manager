@@ -1,5 +1,9 @@
 package manager
 
+import (
+	log "github.com/sirupsen/logrus"
+)
+
 // IRaid
 type IRaid interface {
 	HasRaid() bool
@@ -78,8 +82,9 @@ func NewRaidParser(disk *DiskIdentify) RaidParser {
 
 func (rp RaidParser) ParseRaidInfo(attr Attribute) RaidInfo {
 	var ri RaidInfo
-
+	log.Infof("ParseRaidInfo = %v", attr.Vendor)
 	if attr.Vendor == "AVAGO" {
+
 		ri.HasRaid = true
 		ri.RaidName = "raid5"
 		ri.RaidState = RAIDStateOptl
@@ -115,6 +120,7 @@ func (rp RaidParser) ParseRaidInfo(attr Attribute) RaidInfo {
 
 		ri.RaidDiskList = rdList
 	}
+	log.Infof("ParseRaidInfo  ri = %v", ri)
 
 	return ri
 }
