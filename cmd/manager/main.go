@@ -106,8 +106,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	stopCh := signals.SetupSignalHandler()
+
 	log.Info("starting monitor disk")
-	go disk.NewController(clusterMgr).StartMonitor()
+	go disk.NewController(nodeMgr).StartMonitor()
 
 	log.Info("starting Disk CSI Driver")
 	go driver.NewDiskDriver(csiCfg).Run()
@@ -116,7 +118,6 @@ func main() {
 	// Add the Metrics Service
 	addMetrics(ctx, cfg)
 
-	stopCh := signals.SetupSignalHandler()
 	// Start Cluster Controller
 	go startClusterController(ctx, clusterMgr, stopCh)
 
@@ -151,7 +152,6 @@ func startNodeController(ctx context.Context, mgr manager.Manager, stopCh <-chan
 	// Start the Cmd
 	if err := mgr.Start(stopCh); err != nil {
 		log.Error(err, "Failed to start Node Cmd")
-
 	}
 
 	os.Exit(1)

@@ -2,11 +2,12 @@ package udev
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/hwameistor/local-disk-manager/pkg/utils"
 	"github.com/pilebones/go-udev/crawler"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/json"
-	"strings"
 )
 
 // CDevice alias of crawler.Device
@@ -27,8 +28,16 @@ func (d CDevice) FilterDisk() bool {
 		log.WithError(err).Errorf("Parse device:%v fail", d)
 		return false
 	}
+	log.Debugf("Device info in udev is:%+v", *device)
 
-	return device.IDType == "disk" && device.DevType == "disk"
+	// virtual block device like loop device will be filter out
+	if device.IDPath == "" {
+		return false
+	}
+
+	// For some disk(ex AliCloud HDD Disk), IDType may be empty
+	return (device.IDType == "disk" || device.IDType == "") &&
+		device.DevType == "disk"
 }
 
 // Device
@@ -76,6 +85,9 @@ type Device struct {
 	// ID_TYPE
 	IDType string `json:"id_type"`
 
+	// ID_PATH
+	IDPath string `json:"id_path"`
+
 	// PartName such as EFI System Partition
 	PartName string `json:"partName"`
 
@@ -107,9 +119,9 @@ func (d *Device) Info() (map[string]string, error) {
 	var out string
 	var err error
 	if d.DevPath != "" {
-		out, err = utils.Bash(fmt.Sprintf("udevadm info -p %s", d.DevPath))
+		out, err = utils.Bash(fmt.Sprintf("udevadm info -p %s --query=all", d.DevPath))
 	} else {
-		out, err = utils.Bash(fmt.Sprintf("udevadm info -n %s", d.DevName))
+		out, err = utils.Bash(fmt.Sprintf("udevadm info -n %s --query=all", d.DevName))
 	}
 
 	if err != nil {
