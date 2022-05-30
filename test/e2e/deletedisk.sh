@@ -4,7 +4,6 @@
 export GOVC_INSECURE=1
 export GOVC_RESOURCE_POOL="e2e"
 export hosts="fupan-e2e-k8s-node1"
-export snapshot="begin-405"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done
 # for h in hosts; do govc vm.power -on -force $h; done

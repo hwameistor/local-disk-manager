@@ -2,6 +2,10 @@
 # simple scripts mng machine
 # link hosts
 export GOVC_INSECURE=1
+export GOVC_USERNAME="panyintian.fu@daocloud.io"
+export GOVC_PASSWORD="rcZa9FY6EiwnYk8!"
+export GOVC_URL="https://192.168.1.136:443"
+export GOVC_DATACENTER="DaoCloud-NDX-Fusion"
 export GOVC_RESOURCE_POOL="e2e"
 export hosts="fupan-e2e-k8s-node1"
 export snapshot="begin-405"
@@ -20,5 +24,5 @@ for h in $hosts; do
   ##删除硬盘
   #govc device.remove -vm $h -keep=false disk-1000-2
   ##修改磁盘大小
-  govc vm.disk.change -vm $h -disk.name "disk-1000-2" -size 12G
+  #govc vm.disk.change -vm $h -disk.name "disk-1000-2" -size 12G
 done
