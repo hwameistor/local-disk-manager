@@ -89,7 +89,6 @@ func nodeList() *apiv1.NodeList {
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
 		logrus.Printf("%+v ", err)
-		f.ExpectNoError(err)
 	}
 	return nodelist
 }
@@ -101,7 +100,6 @@ func addLabels() {
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
-		f.ExpectNoError(err)
 		logrus.Printf("%+v ", err)
 	}
 	for _, nodes := range nodelist.Items {
@@ -112,7 +110,6 @@ func addLabels() {
 		err := client.Get(context.TODO(), nodeKey, node)
 		if err != nil {
 			logrus.Printf("%+v ", err)
-			f.ExpectNoError(err)
 		}
 
 		if _, exists := node.Labels["lvm.hwameistor.io/enable"]; !exists {
@@ -121,7 +118,6 @@ func addLabels() {
 			err := client.Update(context.TODO(), node)
 			if err != nil {
 				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
 			}
 		}
 
@@ -151,7 +147,6 @@ func configureEnvironment(ctx context.Context) bool {
 	err := client.Get(ctx, localStorageKey, localStorage)
 	if err != nil {
 		logrus.Error("%+v ", err)
-		f.ExpectNoError(err)
 	}
 
 	controller := &appsv1.Deployment{}
@@ -162,7 +157,6 @@ func configureEnvironment(ctx context.Context) bool {
 	err = client.Get(context.TODO(), controllerKey, controller)
 	if err != nil {
 		logrus.Error(err)
-		f.ExpectNoError(err)
 	}
 
 	scheduler := &appsv1.Deployment{}
@@ -174,7 +168,6 @@ func configureEnvironment(ctx context.Context) bool {
 	err = client.Get(context.TODO(), schedulerKey, scheduler)
 	if err != nil {
 		logrus.Error(err)
-		f.ExpectNoError(err)
 	}
 	localDiskManager := &appsv1.DaemonSet{}
 	localDiskManagerKey := k8sclient.ObjectKey{
@@ -185,7 +178,6 @@ func configureEnvironment(ctx context.Context) bool {
 	err = client.Get(ctx, localDiskManagerKey, localDiskManager)
 	if err != nil {
 		logrus.Error(err)
-		f.ExpectNoError(err)
 
 	}
 
@@ -197,22 +189,18 @@ func configureEnvironment(ctx context.Context) bool {
 			err := client.Get(ctx, localStorageKey, localStorage)
 			if err != nil {
 				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, controllerKey, controller)
 			if err != nil {
 				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, schedulerKey, scheduler)
 			if err != nil {
 				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
 			if err != nil {
 				logrus.Error(err)
-				f.ExpectNoError(err)
 			}
 
 		}
@@ -241,7 +229,6 @@ func uninstallHelm() {
 	err := client.List(context.TODO(), &crdList)
 	if err != nil {
 		logrus.Printf("%+v ", err)
-		f.ExpectNoError(err)
 	}
 	for _, crd := range crdList.Items {
 		myBool, _ := regexp.MatchString(".*hwameistor.*", crd.Name)
@@ -249,7 +236,6 @@ func uninstallHelm() {
 			err := client.Delete(context.TODO(), &crd)
 			if err != nil {
 				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
 			}
 		}
 
@@ -279,7 +265,6 @@ func createLdc(ctx context.Context) error {
 		err := client.Create(ctx, exmlocalDiskClaim)
 		if err != nil {
 			logrus.Printf("Create LDC failed ：%+v ", err)
-			f.ExpectNoError(err)
 		}
 	}
 
@@ -294,7 +279,6 @@ func createLdc(ctx context.Context) error {
 			err = client.Get(ctx, localDiskClaimKey, localDiskClaim)
 			if err != nil {
 				logrus.Error(err)
-				f.ExpectNoError(err)
 			}
 			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
 				return false, nil
@@ -319,7 +303,6 @@ func deleteAllPVC(ctx context.Context) error {
 	err := client.List(ctx, pvcList)
 	if err != nil {
 		logrus.Error("get pvc list error ", err)
-		f.ExpectNoError(err)
 	}
 
 	for _, pvc := range pvcList.Items {
@@ -328,7 +311,6 @@ func deleteAllPVC(ctx context.Context) error {
 		err := client.Delete(ctx, &pvc)
 		if err != nil {
 			logrus.Error("delete pvc error: ", err)
-			f.ExpectNoError(err)
 		}
 	}
 
@@ -336,7 +318,6 @@ func deleteAllPVC(ctx context.Context) error {
 		err = client.List(ctx, pvcList)
 		if err != nil {
 			logrus.Error("get pvc list error: ", err)
-			f.ExpectNoError(err)
 		}
 		if len(pvcList.Items) != 0 {
 			return false, nil
@@ -361,7 +342,6 @@ func deleteAllSC(ctx context.Context) error {
 	err := client.List(ctx, scList)
 	if err != nil {
 		logrus.Error("get sc list error:", err)
-		f.ExpectNoError(err)
 	}
 
 	for _, sc := range scList.Items {
@@ -369,14 +349,12 @@ func deleteAllSC(ctx context.Context) error {
 		err := client.Delete(ctx, &sc)
 		if err != nil {
 			logrus.Error("delete sc error", err)
-			f.ExpectNoError(err)
 		}
 	}
 	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 		err = client.List(ctx, scList)
 		if err != nil {
 			logrus.Error("get sc list error", err)
-			f.ExpectNoError(err)
 		}
 		if len(scList.Items) != 0 {
 			return false, nil
