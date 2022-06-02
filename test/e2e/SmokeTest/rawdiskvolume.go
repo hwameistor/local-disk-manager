@@ -14,15 +14,12 @@ import (
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"time"
 )
 
-var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("1"), ginkgo.Label("2"), func() {
+var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("test"), func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
@@ -30,7 +27,6 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("1"), ginkgo.L
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.Equal(true))
-		createLdc(ctx)
 
 	})
 	ginkgo.Context("create a StorageClass", func() {
@@ -123,10 +119,10 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("1"), ginkgo.L
 											ContainerPort: 80,
 										},
 									},
-									VolumeMounts: []apiv1.VolumeMount{
+									VolumeDevices: []apiv1.VolumeDevice{
 										{
-											Name:      "2048-volume-lvm",
-											MountPath: "/data",
+											Name:       "2048-volume-lvm",
+											DevicePath: "/data",
 										},
 									},
 								},
@@ -203,105 +199,6 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("1"), ginkgo.L
 
 		})
 
-	})
-	ginkgo.Context("Test the volume", func() {
-		ginkgo.It("write test data", func() {
-
-			config, err := config.GetConfig()
-			if err != nil {
-				return
-			}
-
-			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
-				Name:      DeploymentName,
-				Namespace: "default",
-			}
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
-			selector := labels.NewSelector()
-			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
-				LabelSelector: selector,
-			}
-			podlist := &v1.PodList{}
-			err = client.List(ctx, podlist, &listOption)
-
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			containers := deployment.Spec.Template.Spec.Containers
-			for _, pod := range podlist.Items {
-				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
-				}
-			}
-		})
-		ginkgo.It("Delete test data", func() {
-			config, err := config.GetConfig()
-			if err != nil {
-				return
-			}
-
-			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
-				Name:      DeploymentName,
-				Namespace: "default",
-			}
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
-			selector := labels.NewSelector()
-			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
-				LabelSelector: selector,
-			}
-			podlist := &v1.PodList{}
-			err = client.List(ctx, podlist, &listOption)
-
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			containers := deployment.Spec.Template.Spec.Containers
-			for _, pod := range podlist.Items {
-				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					gomega.Expect(output).To(gomega.Equal(""))
-				}
-			}
-		})
 	})
 	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("Delete test Deployment", func() {
