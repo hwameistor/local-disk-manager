@@ -92,6 +92,7 @@ clean:
 .PHONY: unit-test
 unit-test:
 	bash test/unit-test.sh
+	curl -s https://codecov.io/bash | bash
 
 .PHONY: e2e-test
 e2e-test:
