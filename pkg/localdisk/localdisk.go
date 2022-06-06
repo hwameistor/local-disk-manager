@@ -83,8 +83,13 @@ func (ctr Controller) GetLocalDisk(key client.ObjectKey) (ldm.LocalDisk, error) 
 // ConvertDiskToLocalDisk
 func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld ldm.LocalDisk) {
 	ld, _ = localdisk.NewBuilder().WithName(ctr.GenLocalDiskName(disk)).
-		SetupNodeName(utils.ConvertNodeName(ctr.NodeName)).SetupAttribute(disk.Attribute).
-		SetupPartitionInfo(disk.Partitions).SetupRaidInfo(disk.Raid).SetupUUID(disk.GenerateUUID()).GenerateStatus().
+		SetupState().
+		SetupRaidInfo(disk.Raid).
+		SetupUUID(disk.GenerateUUID()).
+		SetupAttribute(disk.Attribute).
+		SetupPartitionInfo(disk.Partitions).
+		SetupNodeName(utils.ConvertNodeName(ctr.NodeName)).
+		GenerateStatus().
 		Build()
 	return
 }

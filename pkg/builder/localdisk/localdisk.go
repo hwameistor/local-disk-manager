@@ -43,6 +43,16 @@ func (builder *Builder) SetupAttribute(attribute manager.Attribute) *Builder {
 	return builder
 }
 
+func (builder *Builder) SetupState() *Builder {
+	if builder.errs != nil {
+		return builder
+	}
+	// fixme: update this state by using by health check tool
+	builder.disk.Spec.State = v1alpha1.LocalDiskActive
+
+	return builder
+}
+
 func (builder *Builder) SetupRaidInfo(raid manager.RaidInfo) *Builder {
 	if builder.errs != nil {
 		return builder
