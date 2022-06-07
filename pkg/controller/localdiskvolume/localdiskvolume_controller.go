@@ -233,7 +233,7 @@ func (v *DiskVolumeHandler) reconcileUnmount() (reconcile.Result, error) {
 	for _, mountPoint := range mountPoints {
 		if mountPoint.Phase == ldm.MountPointToBeUnMount {
 			if err = v.UnMount(mountPoint.TargetPath); err != nil {
-				log.WithError(err).Errorf("Failed to unmount %s", mountPoint)
+				log.WithError(err).Errorf("Failed to unmount %s", mountPoint.TargetPath)
 				result.Requeue = true
 				continue
 			}
