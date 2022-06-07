@@ -91,7 +91,7 @@ clean:
 
 .PHONY: unit-test
 unit-test:
-	bash test/unit-test.sh
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
 	curl -s https://codecov.io/bash | bash
 
 .PHONY: e2e-test
