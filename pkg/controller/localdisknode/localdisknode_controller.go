@@ -203,7 +203,7 @@ func (n *DiskNodeHandler) UpdateDiskLists(updateDisks, removedDisks map[string]l
 	// remove disk
 	for name, removeDisk := range removedDisks {
 		delete(n.diskNode.Status.Disks, name)
-		if removeDisk.Status != string(ldm.LocalDiskUnclaimed) || removeDisk.Status != string(ldm.LocalDiskReleased) {
+		if removeDisk.Status != string(ldm.LocalDiskUnclaimed) && removeDisk.Status != string(ldm.LocalDiskReleased) {
 			n.EventRecorder.Eventf(n.diskNode, v1.EventTypeWarning, "RemoveDisk", ""+
 				"Disk %s is removed but state is %s, disk last info: %+v", removeDisk.DevPath, removeDisk.Status, removeDisk)
 		} else {
