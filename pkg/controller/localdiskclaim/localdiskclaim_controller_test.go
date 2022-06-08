@@ -2,6 +2,9 @@ package localdiskclaim
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,8 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
-	"time"
 )
 
 var (
@@ -22,111 +23,122 @@ var (
 	localDiskUID                 = "local-disk-example-uid"
 	fakeNamespace                = "local-disk-manager-test"
 	fakeNodename                 = "10-6-118-10"
-	disktype                     = "HDD"
+	diskTypeHDD                  = "HDD"
 	devPath                      = "/dev/fake-sda"
 	devType                      = "disk"
-	vendor                       = "VMware"
-	protocol                     = "scsi"
+	vendorVMware                 = "VMware"
+	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
 	localDiskKind                = "LocalDisk"
 	localDiskClaimKind           = "LocalDiskClaim"
-	capacity               int64 = 100 * 1024 * 1024 * 1024
+	cap100G                int64 = 100 * 1024 * 1024 * 1024
+	cap10G                 int64 = 10 * 1024 * 1024 * 1024
 	fakeRecorder                 = record.NewFakeRecorder(100)
 )
 
 func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
-	//cli, s := CreateFakeClient()
-	//
-	//// Create a Reconcile for LocalDiskClaim
-	//r := ReconcileLocalDiskClaim{
-	//	Client:   cli,
-	//	Scheme:   s,
-	//	Recorder: fakeRecorder,
-	//}
-	//
-	//cases := []struct {
-	//	ld          *ldmv1alpha1.LocalDisk
-	//	ldc         *ldmv1alpha1.LocalDiskClaim
-	//	setProperty func(claim ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk)
-	//	wantBound   bool
-	//}{
-	//	// Disk capacity is sufficient, should not reconcile
-	//	{
-	//		ld:        GenFakeLocalDiskObject(),
-	//		ldc:       GenFakeLocalDiskClaimObject(),
-	//		wantBound: true,
-	//	},
-	//
-	//	// Disk capacity is not enough, should reconcile
-	//	{
-	//		ld:        GenFakeLocalDiskObject(),
-	//		ldc:       GenFakeLocalDiskClaimObject(),
-	//		wantBound: false,
-	//	},
-	//}
-	//
-	//// Modify disk capacity to meet disk requirements
-	//cases[0].ld.Spec.Capacity = 1024 * 1024 * 1024
-	//cases[0].ldc.Spec.Description.Capacity = 1024 * 1024
-	//
-	//// Modify disk capacity to do not meet disk requirements
-	//cases[1].ld.Spec.Capacity = 1024 * 1024
-	//cases[1].ldc.Spec.Description.Capacity = 1024 * 1024 * 1024
-	//
-	//for _, test := range cases {
-	//	// Reconcile
-	//	r.ClaimLocalDisk(t, test.ld, test.ldc)
-	//
-	//	// Check claim Status
-	//	r.CheckLocalDiskClaimIsBound(t, test.ldc, test.wantBound)
-	//
-	//	// Check disk bound relationship
-	//	if test.wantBound {
-	//		r.CheckDiskBound(t, test.ld, test.ldc)
-	//	}
-	//}
+	cli, s := CreateFakeClient()
+
+	// Create a Reconcile for LocalDiskClaim
+	r := ReconcileLocalDiskClaim{
+		Client:   cli,
+		Scheme:   s,
+		Recorder: fakeRecorder,
+	}
+
+	testcases := []struct {
+		description string
+		ld          *ldmv1alpha1.LocalDisk
+		ldc         *ldmv1alpha1.LocalDiskClaim
+		setProperty func(claim *ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk)
+		wantBound   bool
+	}{
+		// Disk cap100G is sufficient, should success
+		{
+			description: "Should return success, ldc state should be Bound",
+			ld:          GenFakeLocalDiskObject(),
+			ldc:         GenFakeLocalDiskClaimObject(),
+			setProperty: func(claim *ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk) {
+				// Modify disk cap100G to meet disk requirements
+				disk.Spec.Capacity = cap100G
+				claim.Spec.Description.Capacity = cap100G
+			},
+			wantBound: true,
+		},
+
+		// Disk cap10G is not enough, should fail
+		{
+			description: "Should return fail, ldc state should be Pending",
+			ld:          GenFakeLocalDiskObject(),
+			ldc:         GenFakeLocalDiskClaimObject(),
+			setProperty: func(claim *ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk) {
+				// Modify disk cap10G to do not meet disk requirements
+				disk.Spec.Capacity = cap10G
+				claim.Spec.Description.Capacity = cap100G
+			},
+			wantBound: false,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.description, func(t *testing.T) {
+			// setProperty first
+			testcase.setProperty(testcase.ldc, testcase.ld)
+
+			// Reconcile
+			r.ClaimLocalDisk(t, testcase.ld, testcase.ldc)
+
+			// Check claim Status
+			r.CheckLocalDiskClaimIsBound(t, testcase.ldc, testcase.wantBound)
+
+			// Check disk bound relationship
+			if testcase.wantBound {
+				r.CheckDiskBound(t, testcase.ld, testcase.ldc)
+			}
+		})
+	}
 }
 
-func TestNewLocalDiskClaimController(t *testing.T) {
-	//cli, s := CreateFakeClient()
-	//// Create a Reconcile for LocalDiskClaim
-	//r := ReconcileLocalDiskClaim{
-	//	Client:   cli,
-	//	Scheme:   s,
-	//	Recorder: fakeRecorder,
-	//}
-	//
-	//// Create LocalDisk
-	//disk := GenFakeLocalDiskObject()
-	//err := r.Create(context.Background(), disk)
-	//if err != nil {
-	//	t.Errorf("Create LocalDisk fail %v", err)
-	//}
-	//defer r.DeleteFakeLocalDisk(t, disk)
-	//
-	//// Create LocalDiskClaim
-	//claim := GenFakeLocalDiskClaimObject()
-	//err = r.Create(context.Background(), claim)
-	//if err != nil {
-	//	t.Errorf("Create LocalDiskClaim fail %v", err)
-	//}
-	//defer r.DeleteFakeLocalDiskClaim(t, claim)
-	//
-	//// Mock LocalDiskClaim request
-	//req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: claim.GetNamespace(), Name: claim.GetName()}}
-	//_, err = r.Reconcile(req)
-	//if err != nil {
-	//	t.Errorf("Reconcile fail %v", err)
-	//}
-	//
-	//// Update claim
-	//err = r.Get(context.Background(), req.NamespacedName, claim)
-	//if err != nil {
-	//	t.Errorf("Get disk claim fail %v", err)
-	//}
-	//
-	//// Checkout claim status, it should be bound
-	//r.CheckLocalDiskClaimIsBound(t, claim, true)
+func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
+	cli, s := CreateFakeClient()
+	// Create a Reconcile for LocalDiskClaim
+	r := ReconcileLocalDiskClaim{
+		Client:   cli,
+		Scheme:   s,
+		Recorder: fakeRecorder,
+	}
+
+	// Create LocalDisk
+	disk := GenFakeLocalDiskObject()
+	err := r.Create(context.Background(), disk)
+	if err != nil {
+		t.Errorf("Create LocalDisk fail %v", err)
+	}
+	defer r.DeleteFakeLocalDisk(t, disk)
+
+	// Create LocalDiskClaim
+	claim := GenFakeLocalDiskClaimObject()
+	err = r.Create(context.Background(), claim)
+	if err != nil {
+		t.Errorf("Create LocalDiskClaim fail %v", err)
+	}
+	defer r.DeleteFakeLocalDiskClaim(t, claim)
+
+	// Mock LocalDiskClaim request
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: claim.GetNamespace(), Name: claim.GetName()}}
+	_, err = r.Reconcile(req)
+	if err != nil {
+		t.Errorf("Reconcile fail %v", err)
+	}
+
+	// Update claim
+	err = r.Get(context.Background(), req.NamespacedName, claim)
+	if err != nil {
+		t.Errorf("Get disk claim fail %v", err)
+	}
+
+	// Checkout claim status, it should be bound
+	r.CheckLocalDiskClaimIsBound(t, claim, true)
 }
 
 // CheckLocalDiskClaimIsBound
@@ -237,8 +249,8 @@ func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
 	Spec := ldmv1alpha1.LocalDiskClaimSpec{
 		NodeName: fakeNodename,
 		Description: ldmv1alpha1.DiskClaimDescription{
-			DiskType: disktype,
-			Capacity: capacity,
+			DiskType: diskTypeHDD,
+			Capacity: cap100G,
 		},
 	}
 
@@ -269,24 +281,27 @@ func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
 	Spec := ldmv1alpha1.LocalDiskSpec{
 		NodeName:     fakeNodename,
 		DevicePath:   devPath,
-		Capacity:     capacity,
+		Capacity:     cap100G,
 		HasPartition: false,
 		HasRAID:      false,
 		RAIDInfo:     ldmv1alpha1.RAIDInfo{},
 		HasSmartInfo: false,
 		SmartInfo:    ldmv1alpha1.SmartInfo{},
 		DiskAttributes: ldmv1alpha1.DiskAttributes{
-			Type:     disktype,
+			Type:     diskTypeHDD,
 			DevType:  devType,
-			Vendor:   vendor,
-			Protocol: protocol,
+			Vendor:   vendorVMware,
+			Protocol: proSCSI,
 		},
 		State: ldmv1alpha1.LocalDiskActive,
 	}
 
+	Status := ldmv1alpha1.LocalDiskStatus{State: ldmv1alpha1.LocalDiskUnclaimed}
+
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata
 	ld.Spec = Spec
+	ld.Status = Status
 	return ld
 }
 
