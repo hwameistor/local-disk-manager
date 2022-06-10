@@ -236,6 +236,27 @@ var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("test"), func() {
 			err := deleteAllPVC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 		})
+		ginkgo.It("check pv", func() {
+			logrus.Printf("check pv")
+			pvList := &apiv1.PersistentVolumeList{}
+
+			err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				err = client.List(ctx, pvList)
+				if err != nil {
+					logrus.Error("get pv list error", err)
+					f.ExpectNoError(err)
+				}
+				if len(pvList.Items) != 0 {
+					return false, nil
+				} else {
+					return true, nil
+				}
+			})
+			if err != nil {
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+		})
 		ginkgo.It("delete all sc", func() {
 			err := deleteAllSC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
