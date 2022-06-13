@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 git clone https://github.com/hwameistor/helm-charts.git test/helm-charts
 git clone https://github.com/hwameistor/local-disk-manager.git test/local-disk-manager
-cp -r -f test/local-disk-manager/deploy/crds/* test/helm-charts/charts/hwameistor/crds/
+cp -r -f test/local-disk-manager/deploy/crds/hwameistor.io_l* test/helm-charts/charts/hwameistor/crds/
 cat test/helm-charts/charts/hwameistor/values.yaml | while read line
 ##
 do
