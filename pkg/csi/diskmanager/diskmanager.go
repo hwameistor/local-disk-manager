@@ -41,14 +41,20 @@ type DiskManager interface {
 	GetNodeDisks(node string) ([]*Disk, error)
 
 	// ClaimDisk UpdateDiskStatus mark disk to TobeMount/Free/InUse... status
-	ClaimDisk(*Disk) error
+	ClaimDisk(name string) error
 
-	// ReleaseDisk update disk to release status
-	ReleaseDisk(diskName string) error
+	// FilterFreeDisks filter matchable free disks
+	FilterFreeDisks([]Disk) (bool, error)
 
-	// SelectFreeDisk use a disk and bind it to a volume
-	SelectFreeDisk(Disk) (*Disk, error)
+	// ReserveDiskForVolume reserve a disk for the volume
+	ReserveDiskForVolume(disk Disk, volume string) error
 
-	// PreSelectFreeDisks only reserve disks, but not use
-	PreSelectFreeDisks([]Disk) (bool, error)
+	// UnReserveDiskForPVC update related disk to release status
+	UnReserveDiskForPVC(pvc string) error
+
+	// ReleaseDisk setup disk to release status
+	ReleaseDisk(disk string) error
+
+	// GetReservedDiskByPVC get disk reserved by the volume
+	GetReservedDiskByPVC(pvc string) (*Disk, error)
 }
