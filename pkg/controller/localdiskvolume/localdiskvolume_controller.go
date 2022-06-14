@@ -336,6 +336,13 @@ func (v *DiskVolumeHandler) MountFileSystem(devPath, mountPoint, fsType string, 
 
 func (v *DiskVolumeHandler) UnMount(mountPoint string) error {
 	if err := v.mounter.Unmount(mountPoint); err != nil {
+		// fixme: need consider raw block
+		if !v.IsDevMountPoint(mountPoint) {
+			v.RecordEvent(corev1.EventTypeWarning, "UnMountSuccess", "Unmount skipped due to mountpoint %s is empty or not mounted by disk %s",
+				mountPoint, v.ldv.Status.DevPath)
+			return nil
+		}
+
 		v.RecordEvent(corev1.EventTypeWarning, "UnMountFailed", "Failed to umount %s due to err: %v",
 			mountPoint, err)
 		return err
@@ -344,6 +351,16 @@ func (v *DiskVolumeHandler) UnMount(mountPoint string) error {
 	v.RecordEvent(corev1.EventTypeNormal, "UnMountSuccess", "Unmount %s successfully",
 		mountPoint)
 	return nil
+}
+
+// IsDevMountPoint judge if this mountpoint is mounted by the dev
+func (v *DiskVolumeHandler) IsDevMountPoint(mountPoint string) bool {
+	for _, p := range v.mounter.GetDeviceMountPoints(v.ldv.Status.DevPath) {
+		if p == mountPoint {
+			return true
+		}
+	}
+	return false
 }
 
 func (v *DiskVolumeHandler) VolumeState() ldm.State {

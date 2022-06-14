@@ -3,6 +3,8 @@ package localdisk
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/hwameistor/local-disk-manager/pkg/utils"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -109,6 +111,9 @@ func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result,
 	ldHandler := NewLocalDiskHandler(r.Client, r.Recorder)
 	ld, err := ldHandler.GetLocalDisk(req.NamespacedName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
 		log.WithError(err).Errorf("Failed to get localdisk")
 		return reconcile.Result{}, err
 	}
@@ -183,13 +188,20 @@ func NewLocalDiskHandler(client client.Client, recorder record.EventRecorder) *L
 func (ldHandler *LocalDiskHandler) GetLocalDisk(key client.ObjectKey) (*ldm.LocalDisk, error) {
 	ld := ldm.LocalDisk{}
 	if err := ldHandler.Get(context.Background(), key, &ld); err != nil {
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 
 	return &ld, nil
+}
+
+func (ldHandler *LocalDiskHandler) GetLocalDiskWithLabels(labels labels.Set) (*ldm.LocalDiskList, error) {
+	list := &ldm.LocalDiskList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "LocalDisk",
+			APIVersion: "v1alpha1",
+		},
+	}
+	return list, ldHandler.List(context.TODO(), list, &client.ListOptions{LabelSelector: labels.AsSelector()})
 }
 
 // ListLocalDisk
@@ -253,6 +265,23 @@ func (ldHandler *LocalDiskHandler) BoundTo(ldc ldm.LocalDiskClaim) error {
 // UpdateStatus
 func (ldHandler *LocalDiskHandler) SetupStatus(status ldm.LocalDiskClaimState) {
 	ldHandler.ld.Status.State = status
+}
+
+// SetupLabel
+func (ldHandler *LocalDiskHandler) SetupLabel(labels labels.Set) {
+	if ldHandler.ld.ObjectMeta.Labels == nil {
+		ldHandler.ld.ObjectMeta.Labels = make(map[string]string)
+	}
+	for k, v := range labels {
+		ldHandler.ld.ObjectMeta.Labels[k] = v
+	}
+}
+
+// SetupLabel
+func (ldHandler *LocalDiskHandler) RemoveLabel(labels labels.Set) {
+	for k := range labels {
+		delete(ldHandler.ld.ObjectMeta.Labels, k)
+	}
 }
 
 // UpdateStatus

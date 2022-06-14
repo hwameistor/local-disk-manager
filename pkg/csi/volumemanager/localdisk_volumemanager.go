@@ -129,14 +129,10 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 		return nil, err
 	}
 
-	// select a free disk
-	selDisk, err := vm.dm.SelectFreeDisk(diskmanager.Disk{
-		AttachNode: r.OwnerNodeName,
-		Capacity:   r.RequireCapacity,
-		DiskType:   r.DiskType,
-	})
+	// get reserved disk for the volume
+	reservedDisk, err := vm.dm.GetReservedDiskByPVC(r.PVCName)
 	if err != nil {
-		log.WithError(err).Error("Failed to select free disk")
+		log.WithError(err).Error("Failed to get reserved disk")
 		return nil, err
 	}
 
@@ -144,9 +140,9 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 	volume, err := localdiskvolume.NewBuilder().WithName(name).
 		SetupPVCName(r.PVCName).
 		SetupDiskType(r.DiskType).
-		SetupDisk(selDisk.DevPath).
-		SetupLocalDiskName(selDisk.Name).
-		SetupAllocateCap(selDisk.Capacity).
+		SetupDisk(reservedDisk.DevPath).
+		SetupLocalDiskName(reservedDisk.Name).
+		SetupAllocateCap(reservedDisk.Capacity).
 		SetupRequiredCapacityBytes(r.RequireCapacity).
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Node: r.OwnerNodeName}).
 		SetupStatus(v1alpha1.VolumeStateCreated).Build()
@@ -158,6 +154,12 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 	v, err := vm.createVolume(volume)
 	if err != nil {
 		log.WithError(err).Error("Failed to create volume")
+		return nil, err
+	}
+
+	// fixme: auto-detect disk status is a better way
+	if err = vm.dm.ClaimDisk(volume.Status.LocalDiskName); err != nil {
+		log.WithError(err).Errorf("Failed to update localdisk %s status to InUse", volume.Status.LocalDiskName)
 		return nil, err
 	}
 
@@ -197,6 +199,12 @@ func (vm *LocalDiskVolumeManager) UpdateVolume(name string, parameters interface
 
 	v, err := vm.updateVolume(newVolume)
 	if err != nil {
+		return nil, err
+	}
+
+	// fixme: auto-detect disk status is a better way
+	if err = vm.dm.ClaimDisk(newVolume.Status.LocalDiskName); err != nil {
+		log.WithError(err).Errorf("Failed to update localdisk %s status to InUse", volume.Status.LocalDiskName)
 		return nil, err
 	}
 
@@ -286,6 +294,8 @@ func (vm *LocalDiskVolumeManager) DeleteVolume(ctx context.Context, name string)
 		return err
 	}
 
+	// fixme: The ToBeDeleted status seems a little redundant, and nothing is actually done.
+	//  If it is to check the status of the data volume associated with the disk, it seems that the mount point is enough
 	// 1.1 update volume state to ToBeDeleted
 	// this step is ensure all mountpoints are safely umount
 	volume.SetupVolumeStatus(v1alpha1.VolumeStateToBeDeleted)

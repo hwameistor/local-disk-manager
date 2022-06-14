@@ -64,6 +64,32 @@ func (s *DiskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 	return true, nil
 }
 
+// Reserve disk needed by the volumes
+func (s *DiskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
+	log.WithFields(log.Fields{"node": node, "volumes": pendingVolumes}).Debug("reserving disk")
+	for _, pvc := range pendingVolumes {
+		diskReq, err := s.convertPVCToDiskRequest(pvc, node)
+		if err != nil {
+			return err
+		}
+		if err = s.diskNodeHandler.ReserveDiskForVolume(diskReq, pvc.GetName()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Unreserve disk reserved by the volumes on the node
+func (s *DiskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
+	log.WithFields(log.Fields{"node": node, "volumes": pendingVolumes}).Debug("unreserving disk")
+	for _, pvc := range pendingVolumes {
+		if err := s.diskNodeHandler.UnReserveDiskForPVC(pvc.GetName()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *DiskVolumeSchedulerPlugin) filterFor(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) {
 	s.boundVolumes = boundVolumes
 	s.pendingVolumes = pendingVolumes
@@ -99,23 +125,19 @@ func (s *DiskVolumeSchedulerPlugin) filterExistVolumes() (bool, error) {
 	return true, nil
 }
 
-func (s *DiskVolumeSchedulerPlugin) convertToDiskRequests() ([]diskmanager.Disk, error) {
-	var diskRequests []diskmanager.Disk
-	for _, volume := range s.pendingVolumes {
-		sc, err := s.getParamsFromStorageClass(volume)
-		if err != nil {
-			log.WithError(err).Errorf("failed to parse params from StorageClass")
-			return nil, err
-		}
-
-		storage := volume.Spec.Resources.Requests[v1.ResourceStorage]
-		diskRequests = append(diskRequests, diskmanager.Disk{
-			AttachNode: s.tobeScheduleNode.GetName(),
-			Capacity:   storage.Value(),
-			DiskType:   sc.DiskType,
-		})
+func (s *DiskVolumeSchedulerPlugin) convertPVCToDiskRequest(pvc *v1.PersistentVolumeClaim, node string) (diskmanager.Disk, error) {
+	sc, err := s.getParamsFromStorageClass(pvc)
+	if err != nil {
+		log.WithError(err).Errorf("failed to parse params from StorageClass")
+		return diskmanager.Disk{}, err
 	}
-	return diskRequests, nil
+
+	storage := pvc.Spec.Resources.Requests[v1.ResourceStorage]
+	return diskmanager.Disk{
+		AttachNode: node,
+		Capacity:   storage.Value(),
+		DiskType:   sc.DiskType,
+	}, nil
 }
 
 func (s *DiskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.PersistentVolumeClaim) (*StorageClassParams, error) {
@@ -135,12 +157,16 @@ func (s *DiskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.Persist
 
 // filterPendingVolumes select free disks for pending pvc
 func (s *DiskVolumeSchedulerPlugin) filterPendingVolumes() (bool, error) {
-	reqDisks, err := s.convertToDiskRequests()
-	if err != nil {
-		return false, err
+	var reqDisks []diskmanager.Disk
+	for _, pvc := range s.pendingVolumes {
+		disk, err := s.convertPVCToDiskRequest(pvc, s.tobeScheduleNode.GetName())
+		if err != nil {
+			return false, err
+		}
+		reqDisks = append(reqDisks, disk)
 	}
 
-	return s.diskNodeHandler.PreSelectFreeDisks(reqDisks)
+	return s.diskNodeHandler.FilterFreeDisks(reqDisks)
 }
 
 func (s *DiskVolumeSchedulerPlugin) CSIDriverName() string {
