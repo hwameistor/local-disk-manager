@@ -28,7 +28,7 @@ do
 done
 
 date=$(date +%Y%m%d%H%M)
-docker tag 10.6.170.180/hwameistor/local-disk-manager:99.9-dev 10.6.170.180/hwameistor/local-disk-manager:$tag-$date
+docker tag 10.6.170.180/hwameistor/local-disk-manager:99.9-dev 10.6.170.180/hwameistor/local-disk-manager:$date
 docker pull 10.6.170.180/hwameistor/local-disk-manager:$tag-$date
 
 ##
