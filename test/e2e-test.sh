@@ -29,7 +29,7 @@ done
 
 date=$(date +%Y%m%d%H%M)
 docker tag 10.6.170.180/hwameistor/local-disk-manager:99.9-dev 10.6.170.180/hwameistor/local-disk-manager:$date
-docker pull 10.6.170.180/hwameistor/local-disk-manager:$date
+docker push 10.6.170.180/hwameistor/local-disk-manager:$date
 
 ##
 sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: '$ImageRegistry'' test/helm-charts/charts/hwameistor/values.yaml
