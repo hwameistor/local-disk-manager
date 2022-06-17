@@ -368,6 +368,7 @@ func deleteAllSC(ctx context.Context) error {
 	if err != nil {
 		logrus.Error("get sc list error:", err)
 		f.ExpectNoError(err)
+
 	}
 
 	for _, sc := range scList.Items {
