@@ -4,8 +4,7 @@ metadata:
   name: local-disk-ioping
 spec:
   restartPolicy: Never
-  nodeSelector:
-    debugnode: "true"
+  schedulerName: hwameistor-scheduler
   volumes:
     - name: local-disk
       persistentVolumeClaim:
