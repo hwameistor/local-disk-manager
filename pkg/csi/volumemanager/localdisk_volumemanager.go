@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/hwameistor/local-disk-manager/pkg/csi/diskmanager"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-disk-manager/pkg/builder/localdiskvolume"
-	volumectr "github.com/hwameistor/local-disk-manager/pkg/controller/localdiskvolume"
-	"github.com/hwameistor/local-disk-manager/pkg/csi/diskmanager"
+	volumectr "github.com/hwameistor/local-disk-manager/pkg/handler/localdiskvolume"
 	"github.com/hwameistor/local-disk-manager/pkg/utils"
 	"github.com/hwameistor/local-disk-manager/pkg/utils/kubernetes"
 	log "github.com/sirupsen/logrus"
