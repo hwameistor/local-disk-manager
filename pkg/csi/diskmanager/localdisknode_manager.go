@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"sync"
 
+	localdisk2 "github.com/hwameistor/local-disk-manager/pkg/handler/localdisk"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,7 +16,6 @@ import (
 
 	"github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-disk-manager/pkg/builder/localdisknode"
-	"github.com/hwameistor/local-disk-manager/pkg/controller/localdisk"
 	"github.com/hwameistor/local-disk-manager/pkg/utils/kubernetes"
 )
 
@@ -36,7 +37,7 @@ type LocalDiskNodesManager struct {
 	mutex sync.Mutex
 
 	// DiskHandler manage LD resources in cluster
-	DiskHandler *localdisk.LocalDiskHandler
+	DiskHandler *localdisk2.LocalDiskHandler
 }
 
 func (ldn *LocalDiskNodesManager) ReleaseDisk(disk string) error {
@@ -82,7 +83,7 @@ func NewLocalDiskManager() *LocalDiskNodesManager {
 		ldn.GetClient = localdisknode.NewKubeclient
 		cli, _ := kubernetes.NewClient()
 		recoder, _ := kubernetes.NewRecorderFor("localdisknodemanager")
-		ldn.DiskHandler = localdisk.NewLocalDiskHandler(cli, recoder)
+		ldn.DiskHandler = localdisk2.NewLocalDiskHandler(cli, recoder)
 	})
 
 	return ldn

@@ -12,9 +12,9 @@ import (
 	storagev1lister "k8s.io/client-go/listers/storage/v1"
 )
 
-// DiskVolumeSchedulerPlugin implement the Scheduler interface
+// diskVolumeSchedulerPlugin implement the Scheduler interface
 // defined in github.com/hwameistor/scheduler/pkg/scheduler/scheduler.go: Scheduler
-type DiskVolumeSchedulerPlugin struct {
+type diskVolumeSchedulerPlugin struct {
 	diskNodeHandler   diskmanager.DiskManager
 	diskVolumeHandler volumemanager.VolumeManager
 
@@ -24,8 +24,8 @@ type DiskVolumeSchedulerPlugin struct {
 	scLister         storagev1lister.StorageClassLister
 }
 
-func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *DiskVolumeSchedulerPlugin {
-	return &DiskVolumeSchedulerPlugin{
+func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *diskVolumeSchedulerPlugin {
+	return &diskVolumeSchedulerPlugin{
 		diskNodeHandler:   diskmanager.NewLocalDiskManager(),
 		diskVolumeHandler: volumemanager.NewLocalDiskVolumeManager(),
 		scLister:          scLister,
@@ -36,7 +36,7 @@ func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *
 // The following two types of situations need to be met at the same time:
 //1. If the pod uses a created volume, we need to ensure that the volume is located at the scheduled node.
 //2. If the pod uses a pending volume, we need to ensure that the scheduled node can meet the requirements of the volume.
-func (s *DiskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) (bool, error) {
+func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) (bool, error) {
 	s.filterFor(boundVolumes, pendingVolumes, node)
 
 	// step1: filter bounded volumes
@@ -65,7 +65,7 @@ func (s *DiskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 }
 
 // Reserve disk needed by the volumes
-func (s *DiskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
+func (s *diskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
 	log.WithFields(log.Fields{"node": node, "volumes": pendingVolumes}).Debug("reserving disk")
 	for _, pvc := range pendingVolumes {
 		diskReq, err := s.convertPVCToDiskRequest(pvc, node)
@@ -80,7 +80,7 @@ func (s *DiskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolum
 }
 
 // Unreserve disk reserved by the volumes on the node
-func (s *DiskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
+func (s *diskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
 	log.WithFields(log.Fields{"node": node, "volumes": pendingVolumes}).Debug("unreserving disk")
 	for _, pvc := range pendingVolumes {
 		if err := s.diskNodeHandler.UnReserveDiskForPVC(pvc.GetName()); err != nil {
@@ -90,14 +90,14 @@ func (s *DiskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVol
 	return nil
 }
 
-func (s *DiskVolumeSchedulerPlugin) filterFor(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) {
+func (s *diskVolumeSchedulerPlugin) filterFor(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) {
 	s.boundVolumes = boundVolumes
 	s.pendingVolumes = pendingVolumes
 	s.tobeScheduleNode = node
 	s.removeDuplicatePVC()
 }
 
-func (s *DiskVolumeSchedulerPlugin) removeDuplicatePVC() {
+func (s *diskVolumeSchedulerPlugin) removeDuplicatePVC() {
 	pvcMap := map[string]*v1.PersistentVolumeClaim{}
 	pvcCopy := s.pendingVolumes
 	for i, pvc := range pvcCopy {
@@ -108,7 +108,7 @@ func (s *DiskVolumeSchedulerPlugin) removeDuplicatePVC() {
 }
 
 // filterExistVolumes compare the tobe scheduled node is equal to the node where volume already located at
-func (s *DiskVolumeSchedulerPlugin) filterExistVolumes() (bool, error) {
+func (s *diskVolumeSchedulerPlugin) filterExistVolumes() (bool, error) {
 	for _, name := range s.boundVolumes {
 		volume, err := s.diskVolumeHandler.GetVolumeInfo(name)
 		if err != nil {
@@ -125,7 +125,7 @@ func (s *DiskVolumeSchedulerPlugin) filterExistVolumes() (bool, error) {
 	return true, nil
 }
 
-func (s *DiskVolumeSchedulerPlugin) convertPVCToDiskRequest(pvc *v1.PersistentVolumeClaim, node string) (diskmanager.Disk, error) {
+func (s *diskVolumeSchedulerPlugin) convertPVCToDiskRequest(pvc *v1.PersistentVolumeClaim, node string) (diskmanager.Disk, error) {
 	sc, err := s.getParamsFromStorageClass(pvc)
 	if err != nil {
 		log.WithError(err).Errorf("failed to parse params from StorageClass")
@@ -140,7 +140,7 @@ func (s *DiskVolumeSchedulerPlugin) convertPVCToDiskRequest(pvc *v1.PersistentVo
 	}, nil
 }
 
-func (s *DiskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.PersistentVolumeClaim) (*StorageClassParams, error) {
+func (s *diskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.PersistentVolumeClaim) (*StorageClassParams, error) {
 	// sc here can't be empty,
 	// more info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
 	if volume.Spec.StorageClassName == nil {
@@ -156,7 +156,7 @@ func (s *DiskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.Persist
 }
 
 // filterPendingVolumes select free disks for pending pvc
-func (s *DiskVolumeSchedulerPlugin) filterPendingVolumes() (bool, error) {
+func (s *diskVolumeSchedulerPlugin) filterPendingVolumes() (bool, error) {
 	var reqDisks []diskmanager.Disk
 	for _, pvc := range s.pendingVolumes {
 		disk, err := s.convertPVCToDiskRequest(pvc, s.tobeScheduleNode.GetName())
@@ -169,6 +169,6 @@ func (s *DiskVolumeSchedulerPlugin) filterPendingVolumes() (bool, error) {
 	return s.diskNodeHandler.FilterFreeDisks(reqDisks)
 }
 
-func (s *DiskVolumeSchedulerPlugin) CSIDriverName() string {
+func (s *diskVolumeSchedulerPlugin) CSIDriverName() string {
 	return identity.DriverName
 }
