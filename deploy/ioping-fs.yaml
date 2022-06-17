@@ -5,8 +5,6 @@ metadata:
 spec:
   schedulerName: hwameistor-scheduler
   restartPolicy: Never
-  nodeSelector:
-    debugnode: "true"
   volumes:
     - name: local-filesystem
       persistentVolumeClaim:
