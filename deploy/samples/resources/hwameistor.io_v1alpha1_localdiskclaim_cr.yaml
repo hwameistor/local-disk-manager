@@ -1,0 +1,12 @@
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalDiskClaim
+metadata:
+  name: disk-claim-172-30-40-53
+  namespace: hwameistor
+spec:
+  # nodeName is the node where disk is attached
+  # If nodeName contains ".",please replace it with "-".
+  # The field value should be consistent with the nodeName in localdisk
+  nodeName: 172-30-40-53
+  description:
+    diskType: HDD
