@@ -1,7 +1,0 @@
-apiVersion: hwameistor.io/v1alpha1
-kind: LocalDiskVolume
-metadata:
-  name: example-localdiskvolume
-spec:
-  # Add fields here
-  size: 3
