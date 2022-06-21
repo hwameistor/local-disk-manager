@@ -204,7 +204,7 @@ func (ldn *LocalDiskNodesManager) ClaimDisk(name string) error {
 	return ldn.DiskHandler.UpdateStatus()
 }
 
-func (ldn *LocalDiskNodesManager) reserve(disk *Disk, volume string) error {
+func (ldn *LocalDiskNodesManager) reserve(disk *Disk, pvc string) error {
 	if disk == nil {
 		return fmt.Errorf("disk is nil")
 	}
@@ -215,14 +215,14 @@ func (ldn *LocalDiskNodesManager) reserve(disk *Disk, volume string) error {
 		return err
 	}
 	ldn.DiskHandler.For(*ld)
-	ldn.DiskHandler.SetupLabel(labels.Set{ReservedPVCKey: volume})
+	ldn.DiskHandler.SetupLabel(labels.Set{ReservedPVCKey: pvc})
 	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskReserved)
 
 	return ldn.DiskHandler.UpdateStatus()
 }
 
 // ReserveDiskForVolume reserve a LocalDisk by update LocalDisk status to Reserved and label this disk for the volume
-func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, volume string) error {
+func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, pvc string) error {
 	ldn.mutex.Lock()
 	defer ldn.mutex.Unlock()
 
@@ -248,7 +248,7 @@ func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, volume stri
 	finalSelectDisk := ldn.diskScoreMax(reqDisk, matchDisks)
 
 	// update disk status to Reserved
-	if err = ldn.reserve(finalSelectDisk, volume); err != nil {
+	if err = ldn.reserve(finalSelectDisk, pvc); err != nil {
 		log.WithError(err).Errorf("failed to reserve disk %s", finalSelectDisk.Name)
 		return err
 	}

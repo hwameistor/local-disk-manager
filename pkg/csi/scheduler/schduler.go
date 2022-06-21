@@ -72,7 +72,7 @@ func (s *diskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolum
 		if err != nil {
 			return err
 		}
-		if err = s.diskNodeHandler.ReserveDiskForVolume(diskReq, pvc.GetName()); err != nil {
+		if err = s.diskNodeHandler.ReserveDiskForVolume(diskReq, pvc.GetNamespace()+"-"+pvc.GetName()); err != nil {
 			return err
 		}
 	}
@@ -83,7 +83,7 @@ func (s *diskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolum
 func (s *diskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
 	log.WithFields(log.Fields{"node": node, "volumes": pendingVolumes}).Debug("unreserving disk")
 	for _, pvc := range pendingVolumes {
-		if err := s.diskNodeHandler.UnReserveDiskForPVC(pvc.GetName()); err != nil {
+		if err := s.diskNodeHandler.UnReserveDiskForPVC(pvc.GetNamespace() + "-" + pvc.GetName()); err != nil {
 			return err
 		}
 	}

@@ -47,7 +47,7 @@ type DiskManager interface {
 	FilterFreeDisks([]Disk) (bool, error)
 
 	// ReserveDiskForVolume reserve a disk for the volume
-	ReserveDiskForVolume(disk Disk, volume string) error
+	ReserveDiskForVolume(disk Disk, pvc string) error
 
 	// UnReserveDiskForPVC update related disk to release status
 	UnReserveDiskForPVC(pvc string) error
