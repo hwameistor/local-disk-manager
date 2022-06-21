@@ -50,7 +50,7 @@ func (builder *Builder) SetupAccessibility(topology v1alpha1.AccessibilityTopolo
 	return builder
 }
 
-func (builder *Builder) SetupPVCName(pvc string) *Builder {
+func (builder *Builder) SetupPVCNameSpaceName(pvc string) *Builder {
 	if err := builder.assertVolumeNotNil(); err != nil {
 		return builder
 	}
