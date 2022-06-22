@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test fs volume", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
@@ -35,14 +35,14 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("test"), func() {
 			waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
 			examplesc := &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "local-storage-hdd-disk",
+					Name: "local-storage-hdd-fs",
 				},
-				Provisioner: "lvm.hwameistor.io",
+				Provisioner: "disk.hwameistor.io",
 				Parameters: map[string]string{
 					"diskType": "HDD",
 				},
 				ReclaimPolicy:        &deleteObj,
-				AllowVolumeExpansion: boolPter(true),
+				AllowVolumeExpansion: boolPter(false),
 				VolumeBindingMode:    &waitForFirstConsumerObj,
 			}
 			err := client.Create(ctx, examplesc)
@@ -55,7 +55,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("test"), func() {
 	ginkgo.Context("create a PVC", func() {
 		ginkgo.It("create PVC", func() {
 			//create PVC
-			storageClassName := "local-fs-disk"
+			storageClassName := "local-storage-hdd-fs"
 			examplePvc := &apiv1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pvc-fs",
@@ -148,7 +148,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("test"), func() {
 		ginkgo.It("PVC STATUS should be Bound", func() {
 			pvc := &apiv1.PersistentVolumeClaim{}
 			pvcKey := k8sclient.ObjectKey{
-				Name:      "pvc-disk",
+				Name:      "pvc-fs",
 				Namespace: "default",
 			}
 			err := client.Get(ctx, pvcKey, pvc)

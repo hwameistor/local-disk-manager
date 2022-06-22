@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("periodCheck"), func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
@@ -38,12 +38,12 @@ var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("test"), func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "local-storage-hdd-disk",
 				},
-				Provisioner: "lvm.hwameistor.io",
+				Provisioner: "disk.hwameistor.io",
 				Parameters: map[string]string{
 					"diskType": "HDD",
 				},
 				ReclaimPolicy:        &deleteObj,
-				AllowVolumeExpansion: boolPter(true),
+				AllowVolumeExpansion: boolPter(false),
 				VolumeBindingMode:    &waitForFirstConsumerObj,
 			}
 			err := client.Create(ctx, examplesc)
