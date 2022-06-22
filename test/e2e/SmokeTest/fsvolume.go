@@ -35,7 +35,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("pr"), func() {
 			waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
 			examplesc := &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "local-storage-hdd-disk",
+					Name: "local-storage-hdd-fs",
 				},
 				Provisioner: "disk.hwameistor.io",
 				Parameters: map[string]string{
@@ -55,7 +55,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("pr"), func() {
 	ginkgo.Context("create a PVC", func() {
 		ginkgo.It("create PVC", func() {
 			//create PVC
-			storageClassName := "local-fs-disk"
+			storageClassName := "local-storage-hdd-fs"
 			examplePvc := &apiv1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pvc-fs",
