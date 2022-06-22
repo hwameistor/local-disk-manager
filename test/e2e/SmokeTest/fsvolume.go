@@ -148,7 +148,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("pr"), func() {
 		ginkgo.It("PVC STATUS should be Bound", func() {
 			pvc := &apiv1.PersistentVolumeClaim{}
 			pvcKey := k8sclient.ObjectKey{
-				Name:      "pvc-disk",
+				Name:      "pvc-fs",
 				Namespace: "default",
 			}
 			err := client.Get(ctx, pvcKey, pvc)
