@@ -137,13 +137,23 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 		log.WithError(err).Error("Failed to ParseVolumeRequest")
 		return nil, err
 	}
+	logCtx := log.Fields{
+		"volume":           name,
+		"node":             r.OwnerNodeName,
+		"pvcNamespaceName": r.PVCNameSpace + "/" + r.PVCName}
 
 	// get reserved disk for the volume
 	reservedDisk, err := vm.dm.GetReservedDiskByPVC(r.PVCNameSpace + "-" + r.PVCName)
 	if err != nil {
-		log.WithError(err).Error("Failed to get reserved disk")
+		log.WithError(err).Error("failed to get reserved disk")
 		return nil, err
 	}
+	if reservedDisk == nil {
+		err = fmt.Errorf("there is no disk reserved by pvc")
+		log.WithFields(logCtx).WithError(err).Error(err)
+		return nil, err
+	}
+	log.WithFields(logCtx).Debugf("get reserve disk %s success", reservedDisk.Name)
 
 	// create LocalDiskVolume if not exist
 	volume, err := localdiskvolume.NewBuilder().WithName(name).

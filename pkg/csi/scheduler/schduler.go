@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hwameistor/local-disk-manager/pkg/csi/volumemanager"
 
@@ -17,11 +18,7 @@ import (
 type diskVolumeSchedulerPlugin struct {
 	diskNodeHandler   diskmanager.DiskManager
 	diskVolumeHandler volumemanager.VolumeManager
-
-	boundVolumes     []string
-	pendingVolumes   []*v1.PersistentVolumeClaim
-	tobeScheduleNode *v1.Node
-	scLister         storagev1lister.StorageClassLister
+	scLister          storagev1lister.StorageClassLister
 }
 
 func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *diskVolumeSchedulerPlugin {
@@ -37,36 +34,49 @@ func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *
 //1. If the pod uses a created volume, we need to ensure that the volume is located at the scheduled node.
 //2. If the pod uses a pending volume, we need to ensure that the scheduled node can meet the requirements of the volume.
 func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) (bool, error) {
-	s.filterFor(boundVolumes, pendingVolumes, node)
+	logCtx := log.Fields{
+		"boundVolumes":   strings.Join(boundVolumes, ","),
+		"node":           node.GetName(),
+		"pendingVolumes": listPendingVolumes(pendingVolumes),
+	}
+	log.WithFields(logCtx).Debug("start disk volume filter")
 
 	// step1: filter bounded volumes
-	ok, err := s.filterExistVolumes()
+	ok, err := s.filterExistVolumes(boundVolumes, node.GetName())
 	if err != nil {
-		log.WithError(err).Errorf("failed to filter node %s for bounded volumes %v due to error: %s", node.GetName(), boundVolumes, err.Error())
+		log.WithFields(logCtx).WithError(err).Errorf("failed to filter node %s for bounded volumes %v due to error: %s", node.GetName(), boundVolumes, err.Error())
 		return false, err
 	}
 	if !ok {
-		log.Infof("node %s is not suitable because of bounded volumes %v is already located on the other node", node.GetName(), boundVolumes)
+		log.WithFields(logCtx).Infof("node %s is not suitable because of bounded volumes %v is already located on the other node", node.GetName(), boundVolumes)
 		return false, nil
 	}
 
 	// step2: filter pending volumes
-	ok, err = s.filterPendingVolumes()
+	ok, err = s.filterPendingVolumes(pendingVolumes, node.GetName())
 	if err != nil {
-		log.WithError(err).Infof("failed to filter node %s for pending volumes due to error: %s", node.GetName(), err.Error())
+		log.WithFields(logCtx).WithError(err).Infof("failed to filter node %s for pending volumes due to error: %s", node.GetName(), err.Error())
 		return false, err
 	}
 	if !ok {
-		log.Infof("node %s is not suitable", node.GetName())
+		log.WithFields(logCtx).Infof("node %s is not suitable", node.GetName())
 		return false, nil
 	}
 
+	log.WithFields(logCtx).Debug("succeed filter disk volume")
 	return true, nil
+}
+
+func listPendingVolumes(pvs []*v1.PersistentVolumeClaim) (s string) {
+	for _, pv := range pvs {
+		s = pv.GetName() + ","
+	}
+	return strings.TrimSuffix(s, ",")
 }
 
 // Reserve disk needed by the volumes
 func (s *diskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
-	log.WithFields(log.Fields{"node": node, "volumes": pendingVolumes}).Debug("reserving disk")
+	log.WithFields(log.Fields{"node": node, "volumes": listPendingVolumes(pendingVolumes)}).Debug("reserving disk")
 	for _, pvc := range pendingVolumes {
 		diskReq, err := s.convertPVCToDiskRequest(pvc, node)
 		if err != nil {
@@ -90,34 +100,27 @@ func (s *diskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVol
 	return nil
 }
 
-func (s *diskVolumeSchedulerPlugin) filterFor(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) {
-	s.boundVolumes = boundVolumes
-	s.pendingVolumes = pendingVolumes
-	s.tobeScheduleNode = node
-	s.removeDuplicatePVC()
-}
-
-func (s *diskVolumeSchedulerPlugin) removeDuplicatePVC() {
+func (s *diskVolumeSchedulerPlugin) removeDuplicatePVC(pendingVolumes []*v1.PersistentVolumeClaim) (pvs []*v1.PersistentVolumeClaim) {
 	pvcMap := map[string]*v1.PersistentVolumeClaim{}
-	pvcCopy := s.pendingVolumes
-	for i, pvc := range pvcCopy {
+	for i, pvc := range pendingVolumes {
 		if _, ok := pvcMap[pvc.GetName()]; ok {
-			s.pendingVolumes = append(s.pendingVolumes[:i], s.pendingVolumes[i+1:]...)
+			pvs = append(pvs[:i], pvs[i+1:]...)
 		}
 	}
+	return
 }
 
 // filterExistVolumes compare the tobe scheduled node is equal to the node where volume already located at
-func (s *diskVolumeSchedulerPlugin) filterExistVolumes() (bool, error) {
-	for _, name := range s.boundVolumes {
+func (s *diskVolumeSchedulerPlugin) filterExistVolumes(boundVolumes []string, tobeScheduleNode string) (bool, error) {
+	for _, name := range boundVolumes {
 		volume, err := s.diskVolumeHandler.GetVolumeInfo(name)
 		if err != nil {
 			log.WithError(err).Errorf("failed to get volume %s info", name)
 			return false, err
 		}
-		if volume.AttachNode != s.tobeScheduleNode.GetName() {
-			log.Infof("bounded volume is located at node %s,so node %s is not suitable", volume.AttachNode,
-				s.tobeScheduleNode.GetName())
+		log.Debugf("exist volume node: %s, tobeSchedulerNode: %s", volume.AttachNode, tobeScheduleNode)
+		if volume.AttachNode != tobeScheduleNode {
+			log.Infof("bounded volume is located at node %s,so node %s is not suitable", volume.AttachNode, tobeScheduleNode)
 			return false, nil
 		}
 	}
@@ -156,10 +159,11 @@ func (s *diskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.Persist
 }
 
 // filterPendingVolumes select free disks for pending pvc
-func (s *diskVolumeSchedulerPlugin) filterPendingVolumes() (bool, error) {
+func (s *diskVolumeSchedulerPlugin) filterPendingVolumes(pendingVolumes []*v1.PersistentVolumeClaim, tobeScheduleNode string) (bool, error) {
+	pendingVolumes = s.removeDuplicatePVC(pendingVolumes)
 	var reqDisks []diskmanager.Disk
-	for _, pvc := range s.pendingVolumes {
-		disk, err := s.convertPVCToDiskRequest(pvc, s.tobeScheduleNode.GetName())
+	for _, pvc := range pendingVolumes {
+		disk, err := s.convertPVCToDiskRequest(pvc, tobeScheduleNode)
 		if err != nil {
 			return false, err
 		}

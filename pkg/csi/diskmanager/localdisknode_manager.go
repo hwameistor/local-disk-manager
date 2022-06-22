@@ -167,24 +167,31 @@ func (ldn *LocalDiskNodesManager) diskScoreMax(reqDisk Disk, existDisks []*Disk)
 	return selDisk
 }
 
+// GetReservedDiskByPVC get disk by use pvc as a label selector
+// Return err if reserved disk is more than 1
 func (ldn *LocalDiskNodesManager) GetReservedDiskByPVC(pvc string) (*Disk, error) {
 	list, err := ldn.DiskHandler.GetLocalDiskWithLabels(labels.Set{ReservedPVCKey: pvc})
 	if err != nil {
 		return nil, err
 	}
 
-	if len(list.Items) == 0 {
-		return nil, fmt.Errorf("there is no disk reserved by pvc %s", pvc)
+	// Want only one disk reserved by the pvc
+	if len(list.Items) > 1 || (list.GetRemainingItemCount() != nil && *list.GetRemainingItemCount() > 0) {
+		return nil, fmt.Errorf("there are more one disks reserved by pvc %s", pvc)
 	}
 
-	reservedDisk := list.Items[0]
-	return &Disk{
-		AttachNode: reservedDisk.Spec.NodeName,
-		Name:       reservedDisk.Name,
-		DevPath:    reservedDisk.Spec.DevicePath,
-		Capacity:   reservedDisk.Spec.Capacity,
-		DiskType:   reservedDisk.Spec.DiskAttributes.Type,
-	}, nil
+	var reservedDisk *Disk
+	for _, disk := range list.Items {
+		reservedDisk = &Disk{
+			AttachNode: disk.Spec.NodeName,
+			Name:       disk.Name,
+			DevPath:    disk.Spec.DevicePath,
+			Capacity:   disk.Spec.Capacity,
+			DiskType:   disk.Spec.DiskAttributes.Type,
+		}
+		break
+	}
+	return reservedDisk, nil
 }
 
 // ClaimDisk claim a LocalDisk by update LocalDisk status to InUse
@@ -225,12 +232,39 @@ func (ldn *LocalDiskNodesManager) reserve(disk *Disk, pvc string) error {
 func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, pvc string) error {
 	ldn.mutex.Lock()
 	defer ldn.mutex.Unlock()
+	var finalSelectDisk *Disk
+	var err error
 
+	// lookup if a disk was reserved by the pvc
+	if finalSelectDisk, err = ldn.GetReservedDiskByPVC(pvc); err != nil {
+		log.WithError(err).Errorf("failed to get reserved disk for pvc %s", pvc)
+		return err
+	}
+
+	// select a new disk for the pvc
+	if finalSelectDisk == nil {
+		finalSelectDisk, err = ldn.SelectDisk(reqDisk)
+		if err != nil {
+			log.WithError(err).Errorf("failed to select disk for pvc %s", pvc)
+			return err
+		}
+	}
+
+	// update disk status to Reserved
+	if err = ldn.reserve(finalSelectDisk, pvc); err != nil {
+		log.WithError(err).Errorf("failed to reserve disk %s", finalSelectDisk.Name)
+		return err
+	}
+
+	return nil
+}
+
+func (ldn *LocalDiskNodesManager) SelectDisk(reqDisk Disk) (*Disk, error) {
 	// get all disks attached on this node
 	existDisks, err := ldn.GetNodeDisks(reqDisk.AttachNode)
 	if err != nil {
 		log.WithError(err).Errorf("failed to get node %s disks", reqDisk.AttachNode)
-		return err
+		return nil, err
 	}
 
 	// find out all matchable disks
@@ -241,19 +275,11 @@ func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, pvc string)
 		}
 	}
 	if len(matchDisks) == 0 {
-		return fmt.Errorf("no available disk for request: %+v", reqDisk)
+		return nil, fmt.Errorf("no available disk for request: %+v", reqDisk)
 	}
 
 	// reserve one most matchable disk
-	finalSelectDisk := ldn.diskScoreMax(reqDisk, matchDisks)
-
-	// update disk status to Reserved
-	if err = ldn.reserve(finalSelectDisk, pvc); err != nil {
-		log.WithError(err).Errorf("failed to reserve disk %s", finalSelectDisk.Name)
-		return err
-	}
-
-	return nil
+	return ldn.diskScoreMax(reqDisk, matchDisks), nil
 }
 
 func (ldn *LocalDiskNodesManager) FilterFreeDisks(reqDisks []Disk) (bool, error) {
