@@ -38,7 +38,7 @@ var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("pr"), func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "local-storage-hdd-disk",
 				},
-				Provisioner: "lvm.hwameistor.io",
+				Provisioner: "disk.hwameistor.io",
 				Parameters: map[string]string{
 					"diskType": "HDD",
 				},
