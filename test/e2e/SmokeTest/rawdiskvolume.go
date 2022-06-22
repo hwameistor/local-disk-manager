@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("pr"), func() {
+var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("periodCheck"), func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
