@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("pr"), func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
@@ -43,7 +43,7 @@ var _ = ginkgo.Describe("test raw disk ", ginkgo.Label("test"), func() {
 					"diskType": "HDD",
 				},
 				ReclaimPolicy:        &deleteObj,
-				AllowVolumeExpansion: boolPter(true),
+				AllowVolumeExpansion: boolPter(false),
 				VolumeBindingMode:    &waitForFirstConsumerObj,
 			}
 			err := client.Create(ctx, examplesc)
