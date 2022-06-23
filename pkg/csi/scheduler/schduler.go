@@ -104,7 +104,10 @@ func (s *diskVolumeSchedulerPlugin) removeDuplicatePVC(pendingVolumes []*v1.Pers
 	pvcMap := map[string]*v1.PersistentVolumeClaim{}
 	for i, pvc := range pendingVolumes {
 		if _, ok := pvcMap[pvc.GetName()]; ok {
-			pvs = append(pvs[:i], pvs[i+1:]...)
+			continue
+		} else {
+			pvcMap[pvc.GetName()] = pendingVolumes[i]
+			pvs = append(pvs, pendingVolumes[i])
 		}
 	}
 	return
