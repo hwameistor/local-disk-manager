@@ -283,8 +283,6 @@ func (ldn *LocalDiskNodesManager) SelectDisk(reqDisk Disk) (*Disk, error) {
 }
 
 func (ldn *LocalDiskNodesManager) FilterFreeDisks(reqDisks []Disk) (bool, error) {
-	ldn.mutex.Lock()
-	defer ldn.mutex.Unlock()
 	if len(reqDisks) == 0 {
 		return true, nil
 	}
@@ -304,9 +302,17 @@ func (ldn *LocalDiskNodesManager) FilterFreeDisks(reqDisks []Disk) (bool, error)
 				matchDisks = append(matchDisks, existDisk)
 			}
 		}
-
 		if len(matchDisks) == 0 {
 			return false, fmt.Errorf("no available disk for request: %+v", reqDisk)
+		}
+
+		// Attention: if a pod claim more than one volume, filter should filter for all the volumes and find more than one disk.
+		// remove disk already match for one volume.
+		scoreMaxDisk := ldn.diskScoreMax(reqDisk, matchDisks)
+		for i, existDisk := range existDisks {
+			if existDisk.Name == scoreMaxDisk.Name {
+				existDisks = append(existDisks[:i], existDisks[i+1:]...)
+			}
 		}
 	}
 
