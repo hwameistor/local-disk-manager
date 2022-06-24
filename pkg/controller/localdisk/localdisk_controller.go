@@ -8,10 +8,8 @@ import (
 
 	ldm "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -138,27 +136,4 @@ func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result,
 
 	// At this stage, we have no relevant inspection data, so we won't do any processing for the time being
 	return reconcile.Result{}, nil
-}
-
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *ldm.LocalDisk) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
-	}
 }

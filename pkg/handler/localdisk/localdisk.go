@@ -84,7 +84,7 @@ func (ldHandler *LocalDiskHandler) For(ld ldm.LocalDisk) *LocalDiskHandler {
 
 // UnClaimed Bounded
 func (ldHandler *LocalDiskHandler) UnClaimed() bool {
-	return !ldHandler.filter.
+	return ldHandler.filter.
 		Init().
 		Unclaimed().
 		GetTotalResult()
