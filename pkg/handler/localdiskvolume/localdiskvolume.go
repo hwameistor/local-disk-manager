@@ -73,6 +73,8 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 			continue
 		}
 		v.UpdateMountPointPhase(mountPoint.TargetPath, ldm.MountPointMounted)
+		// once a volume is attached success, the disk will be wiped when volume is delete
+		v.SetCanWipe(true)
 	}
 
 	if !result.Requeue {
@@ -122,7 +124,30 @@ func (v *DiskVolumeHandler) ReconcileToBeDeleted() (reconcile.Result, error) {
 }
 
 func (v *DiskVolumeHandler) ReconcileDeleted() (reconcile.Result, error) {
+	// wipe disk
+	if err := v.WipeDisk(); err != nil {
+		return reconcile.Result{}, err
+	}
 	return reconcile.Result{}, v.Delete(context.Background(), v.Ldv)
+}
+
+// WipeDisk use wipefs to wipe disk
+func (v *DiskVolumeHandler) WipeDisk() error {
+	logCtx := log.Fields{"volume": v.Ldv.GetName(), "localdisk": v.GetBoundDisk(), "devName": v.GetDevPath()}
+	if !v.GetCanWipe() {
+		log.WithFields(logCtx).Debug("disk will not be wiped")
+		return nil
+	}
+
+	wipefs := fmt.Sprintf("wipefs -af %s", v.GetDevPath())
+	log.WithFields(logCtx).Debugf("disk will be wiped by cmd %s", wipefs)
+
+	if _, err := utils.Bash(wipefs); err != nil {
+		log.WithFields(logCtx).WithError(err).Error("failed to wipe disk")
+		return err
+	}
+	log.WithFields(logCtx).Debug("disk wipe success")
+	return nil
 }
 
 func (v *DiskVolumeHandler) GetLocalDiskVolume(key client.ObjectKey) (volume *ldm.LocalDiskVolume, err error) {
@@ -161,6 +186,14 @@ func (v *DiskVolumeHandler) GetMountPoints() []ldm.MountPoint {
 
 func (v *DiskVolumeHandler) GetDevPath() string {
 	return v.Ldv.Status.DevPath
+}
+
+func (v *DiskVolumeHandler) GetCanWipe() bool {
+	return v.Ldv.Spec.CanWipe
+}
+
+func (v *DiskVolumeHandler) SetCanWipe(canWipe bool) {
+	v.Ldv.Spec.CanWipe = canWipe
 }
 
 func (v *DiskVolumeHandler) MountRawBlock(devPath, mountPoint string) error {

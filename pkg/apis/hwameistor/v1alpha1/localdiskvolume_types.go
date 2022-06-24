@@ -42,6 +42,10 @@ type LocalDiskVolumeSpec struct {
 
 	// PersistentVolumeClaimName is the reference of the associated PVC
 	PersistentVolumeClaimName string `json:"persistentVolumeClaimName,omitempty"`
+
+	// CanWipe represents if disk can wipe after Volume is deleted
+	// If disk has been writen data, this is will be changed to true
+	CanWipe bool `json:"canWipe,omitempty"`
 }
 
 // MountPoint
