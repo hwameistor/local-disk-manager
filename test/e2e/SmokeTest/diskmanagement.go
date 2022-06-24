@@ -26,6 +26,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("test"), ginkgo.
 			configureEnvironment(ctx)
 		})
 		ginkgo.It("Check existed Local Disk", func() {
+			time.Sleep(2 * time.Minute)
 			localDiskList := &ldv1.LocalDiskList{}
 			err := client.List(ctx, localDiskList)
 			if err != nil {
