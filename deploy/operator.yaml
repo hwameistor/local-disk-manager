@@ -55,6 +55,8 @@ spec:
       hostNetwork: true
       hostPID: true
       serviceAccountName: local-disk-manager
+	  # registrar container is part of csi components
+	  # if csi is disabled, please comment out this part
       containers:
         - name: registrar
           image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
