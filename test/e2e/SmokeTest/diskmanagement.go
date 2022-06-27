@@ -12,12 +12,12 @@ import (
 	"time"
 )
 
-var _ = ginkgo.AfterSuite(func() {
+var _ = ginkgo.AfterAll(func() {
 	output := runInLinux("sh deletedisk.sh")
 	logrus.Info("delete disk", output)
 })
 
-var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
