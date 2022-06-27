@@ -37,6 +37,7 @@ type driver struct {
 }
 
 type Config struct {
+	Enable        bool   `json:"enable"`
 	DriverName    string `json:"driverName"`
 	Endpoint      string `json:"endpoint"`
 	NodeID        string `json:"nodeId"`
