@@ -3,8 +3,6 @@ package localdiskvolume
 import (
 	"testing"
 
-	"github.com/hwameistor/local-disk-manager/pkg/handler/localdiskvolume"
-
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 )
@@ -96,6 +94,6 @@ func TestLocalDiskVolumeHandler_MoveMountPoint(t *testing.T) {
 	}
 }
 
-func newEmptyVolumeHandler() *localdiskvolume.DiskVolumeHandler {
-	return &localdiskvolume.DiskVolumeHandler{}
+func newEmptyVolumeHandler() *DiskVolumeHandler {
+	return &DiskVolumeHandler{}
 }
