@@ -16,4 +16,5 @@ for h in $hosts; do
   # govc device.ls -vm $h
   ##删除硬盘
   govc device.remove -vm $h -keep=false disk-1000-3
+  govc device.ls -vm $h
 done
