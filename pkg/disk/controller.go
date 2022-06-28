@@ -3,8 +3,8 @@ package disk
 import (
 	"fmt"
 	ldm "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
-	ldctr "github.com/hwameistor/local-disk-manager/pkg/controller/localdisk"
 	"github.com/hwameistor/local-disk-manager/pkg/disk/manager"
+	localdisk2 "github.com/hwameistor/local-disk-manager/pkg/handler/localdisk"
 	"github.com/hwameistor/local-disk-manager/pkg/localdisk"
 	"github.com/hwameistor/local-disk-manager/pkg/lsblk"
 	_ "github.com/hwameistor/local-disk-manager/pkg/udev"
@@ -32,7 +32,7 @@ type Controller struct {
 
 	rdhandler *rdmgr.ReplaceDiskHandler
 
-	ldhandler *ldctr.LocalDiskHandler
+	ldhandler *localdisk2.LocalDiskHandler
 }
 
 // NewController
@@ -43,7 +43,7 @@ func NewController(mgr crmanager.Manager) *Controller {
 		localDiskController: localdisk.NewController(mgr),
 		diskQueue:           make(chan manager.Event),
 		rdhandler:           rdmgr.NewReplaceDiskHandler(mgr.GetClient(), recorder),
-		ldhandler:           ldctr.NewLocalDiskHandler(mgr.GetClient(), recorder),
+		ldhandler:           localdisk2.NewLocalDiskHandler(mgr.GetClient(), recorder),
 	}
 }
 

@@ -140,7 +140,7 @@ github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor
 github.com/hwameistor/local-storage/pkg/member/csi
 github.com/hwameistor/local-storage/pkg/member/node/storage
 github.com/hwameistor/local-storage/pkg/utils
-# github.com/hwameistor/reliable-helper-system v0.0.6
+# github.com/hwameistor/reliable-helper-system v0.0.7
 ## explicit; go 1.17
 github.com/hwameistor/reliable-helper-system/pkg/apis
 github.com/hwameistor/reliable-helper-system/pkg/apis/hwameistor/v1alpha1

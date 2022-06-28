@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/hwameistor/local-storage v0.1.10
-	github.com/hwameistor/reliable-helper-system v0.0.6
+	github.com/hwameistor/reliable-helper-system v0.0.7
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.17.0
 	github.com/operator-framework/operator-sdk v0.18.2

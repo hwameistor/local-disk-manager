@@ -24,11 +24,11 @@ type PartitionInfo struct {
 type RaidType string
 
 const (
-	RaidType0 RaidType = "Raid0"
+	RaidType0 RaidType = "RAID0"
 
-	RaidType1 RaidType = "Raid1"
+	RaidType1 RaidType = "RAID1"
 
-	RaidType5 RaidType = "Raid5"
+	RaidType5 RaidType = "RAID5"
 )
 
 type RAIDState string
