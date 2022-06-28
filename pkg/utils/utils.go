@@ -31,6 +31,60 @@ func ParseKeyValuePairString(propsRaw string) map[string]string {
 	return propMap
 }
 
+func ParseRAIDDisksKeyValuePairString(propsRaw string) map[string]string {
+	// first split the single raw string on spaces and initialize a map of
+	// a length equal to the number of pairs
+	props := strings.Split(propsRaw, " ")
+	propMap := make(map[string]string, len(props))
+
+	for i, kvpRaw := range props {
+		log.Infof("ParseRAIDDisksKeyValuePairString i = %v, kvpRaw = %v", i, kvpRaw)
+		switch i {
+		case 0:
+			propMap["EID:Slt"] = kvpRaw
+		case 1:
+			propMap["DID"] = kvpRaw
+		case 2:
+			propMap["State"] = kvpRaw
+		case 3:
+			propMap["DG"] = kvpRaw
+		case 4:
+			propMap["Size"] = kvpRaw
+		case 5:
+			propMap["Intf"] = kvpRaw
+		case 6:
+			propMap["Med"] = kvpRaw
+		case 7:
+			propMap["Model"] = kvpRaw
+		}
+	}
+
+	return propMap
+}
+
+func ParseRAIDKeyValuePairString(propsRaw string) map[string]string {
+	// first split the single raw string on spaces and initialize a map of
+	// a length equal to the number of pairs
+	props := strings.Split(propsRaw, " ")
+	propMap := make(map[string]string, len(props))
+
+	for i, kvpRaw := range props {
+		log.Infof("ParseRAIDKeyValuePairString i = %v, kvpRaw = %v", i, kvpRaw)
+		switch i {
+		case 0:
+			propMap["DG/VD"] = kvpRaw
+		case 3:
+			propMap["TYPE"] = kvpRaw
+		case 4:
+			propMap["State"] = kvpRaw
+		case 27:
+			propMap["Name"] = kvpRaw
+		}
+	}
+
+	return propMap
+}
+
 // GetNodeName gets the node name from env, else
 // returns an error
 func GetNodeName() string {
