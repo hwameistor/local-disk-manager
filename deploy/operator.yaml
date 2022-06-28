@@ -1,3 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hwameistor
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hwameistor-role
+rules:
+  - apiGroups: [ "*" ]
+    resources:
+      - "*"
+    verbs: [ "*" ]
+  - nonResourceURLs: [ "*" ]
+    verbs: [ "*" ]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: hwameistor-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: local-disk-manager
+    namespace: hwameistor
+roleRef:
+  kind: ClusterRole
+  name: local-disk-manager
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: local-disk-manager
+  namespace: hwameistor
+
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -14,19 +54,12 @@ spec:
     spec:
       hostNetwork: true
       hostPID: true
-#      affinity:
-#        nodeAffinity:
-#          requiredDuringSchedulingIgnoredDuringExecution:
-#            nodeSelectorTerms:
-#              - matchExpressions:
-#                  - key: debugnode
-#                    operator: In
-#                    values:
-#                      - "true"
       serviceAccountName: local-disk-manager
+	  # registrar container is part of csi components
+	  # if csi is disabled, please comment out this part
       containers:
         - name: registrar
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v1.1.0
+          image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
@@ -46,9 +79,9 @@ spec:
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
-        - name: local-disk-manager
+        - name: manager
           # Replace this with the built image name
-          image: ghcr.io/hwameistor/local-disk-manager:v0.0.3-20220518164903
+          image: ghcr.io/hwameistor/local-disk-manager:v0.1.4-202206171522
           command:
           - /local-disk-manager
           args:
@@ -132,6 +165,189 @@ spec:
           operator: Exists
         - effect: NoSchedule
           key: node.kubernetes.io/not-ready
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          operator: Exists
+
+##############################################
+###########                       ############
+###########   CSI Controller      ############
+###########                       ############
+##############################################
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: hwameistor-local-disk-csi-controller
+  namespace: hwameistor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hwameistor-local-disk-csi-controller
+  template:
+    metadata:
+      labels:
+        app: hwameistor-local-disk-csi-controller
+    spec:
+      priorityClassName: system-cluster-critical
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - hwameistor-local-disk-manager
+            topologyKey: topology.disk.hwameistor.io/node
+      serviceAccountName: local-disk-manager
+      containers:
+        - name: provisioner
+          image: quay.io/k8scsi/csi-provisioner:v2.0.3
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+            - "--feature-gates=Topology=true"
+            - "--strict-topology"
+            - "--extra-create-metadata=true"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: attacher
+          image: quay.io/k8scsi/csi-attacher:v3.0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+            - "--timeout=120s"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/disk.hwameistor.io
+            type: DirectoryOrCreate
+
+##############################################
+##########                         ###########
+########## SchedulerConfiguration  ###########
+##########                         ###########
+##############################################
+
+# Scheduler deploy yaml is copied from https://github.com/hwameistor/scheduler/blob/main/deploy/scheduler.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hwameistor-scheduler-config
+  namespace: hwameistor
+data:
+  scheduler-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta2
+    kind: KubeSchedulerConfiguration
+    profiles:
+      - schedulerName: hwameistor-scheduler
+        plugins:
+          filter:
+            enabled:
+              - name: hwameistor-scheduler-plugin
+          reserve:
+            enabled:
+              - name: hwameistor-scheduler-plugin      
+    leaderElection:
+      leaderElect: true
+      resourceName: hwameistor-scheduler
+    clientConnection:
+      kubeconfig: /etc/kubernetes/scheduler.conf
+      
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-scheduler
+  namespace: hwameistor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hwameistor-scheduler
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: hwameistor-scheduler
+    spec:
+      serviceAccountName: local-disk-manager
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+      containers:
+        - args:
+            - -v=2
+            - --bind-address=0.0.0.0
+            - --kubeconfig=/etc/kubernetes/scheduler.conf
+            - --leader-elect=false
+            - --leader-elect-resource-name=hwameistor-scheduler
+            - --config=/etc/hwameistor/scheduler-config.yaml
+            - --leader-elect-resource-namespace=hwameistor
+          image: ghcr.io/hwameistor/scheduler:v0.1.6
+          imagePullPolicy: IfNotPresent
+          name: scheduler
+          resources:
+            limits:
+              cpu: 200m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/kubernetes/scheduler.conf
+              name: kubeconfig
+              readOnly: true
+            - mountPath: /etc/hwameistor/
+              name: hwameistor-scheduler-config
+              readOnly: true
+      volumes:
+        - hostPath:
+            path: /etc/kubernetes/admin.conf
+            type: FileOrCreate
+          name: kubeconfig
+        - configMap:
+            name: hwameistor-scheduler-config
+            items:
+              - key: scheduler-config.yaml
+                path: scheduler-config.yaml
+          name: hwameistor-scheduler-config
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
           operator: Exists
         - effect: NoSchedule
           key: node-role.kubernetes.io/master

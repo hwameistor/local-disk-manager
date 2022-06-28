@@ -134,6 +134,16 @@ func installHwameiStorByHelm() {
 }
 
 func configureEnvironment(ctx context.Context) bool {
+	logrus.Info("start rollback")
+	_ = runInLinux("sh rollback.sh")
+	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
+		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		if output != "1\n" {
+			return false, nil
+		}
+		return true, nil
+	})
+	logrus.Info("k8s ready")
 	installHwameiStorByHelm()
 	addLabels()
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
@@ -144,7 +154,7 @@ func configureEnvironment(ctx context.Context) bool {
 		Name:      "hwameistor-local-storage",
 		Namespace: "hwameistor",
 	}
-	err := client.Get(ctx, localStorageKey, localStorage)
+	err = client.Get(ctx, localStorageKey, localStorage)
 	if err != nil {
 		logrus.Error("%+v ", err)
 		f.ExpectNoError(err)
@@ -219,7 +229,7 @@ func configureEnvironment(ctx context.Context) bool {
 	case <-ch:
 		logrus.Infof("Components are ready ")
 		return true
-	case <-time.After(5 * time.Minute):
+	case <-time.After(10 * time.Minute):
 		logrus.Error("timeout")
 		return false
 
@@ -358,6 +368,7 @@ func deleteAllSC(ctx context.Context) error {
 	if err != nil {
 		logrus.Error("get sc list error:", err)
 		f.ExpectNoError(err)
+
 	}
 
 	for _, sc := range scList.Items {

@@ -2,13 +2,8 @@
 # simple scripts mng machine
 # link hosts
 export GOVC_INSECURE=1
-export GOVC_USERNAME="panyintian.fu@daocloud.io"
-export GOVC_PASSWORD="rcZa9FY6EiwnYk8!"
-export GOVC_URL="https://192.168.1.136:443"
-export GOVC_DATACENTER="DaoCloud-NDX-Fusion"
 export GOVC_RESOURCE_POOL="e2e"
 export hosts="fupan-e2e-k8s-node1"
-export snapshot="begin-405"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done
 # for h in hosts; do govc vm.power -on -force $h; done
@@ -21,4 +16,5 @@ for h in $hosts; do
   # govc device.ls -vm $h
   ##删除硬盘
   govc device.remove -vm $h -keep=false disk-1000-3
+  govc device.ls -vm $h
 done

@@ -1,3 +1,28 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-disk-hdd-disk
+provisioner: disk.hwameistor.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: false
+reclaimPolicy: Delete
+parameters:
+  diskType: "HDD"
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: local-fs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-disk-hdd-disk
+  resources:
+    requests:
+      storage: 1Gi
+
+---
 apiVersion: v1
 kind: Pod
 metadata:
@@ -5,8 +30,6 @@ metadata:
 spec:
   schedulerName: hwameistor-scheduler
   restartPolicy: Never
-  nodeSelector:
-    debugnode: "true"
   volumes:
     - name: local-filesystem
       persistentVolumeClaim:

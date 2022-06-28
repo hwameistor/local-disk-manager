@@ -19,6 +19,7 @@ type ReplaceDiskSpec struct {
 	// NodeName nodeName of the replaced disk
 	NodeName    string `json:"nodeName,omitempty"`
 	DriverGroup string `json:"driverGroup,omitempty"`
+	CtrId       string `json:"ctrId,omitempty"`
 	SltId       string `json:"sltId,omitempty"`
 	EID         string `json:"eId,omitempty"`
 	// Init WaitDiskReplaced WaitSvcRestor Succeed

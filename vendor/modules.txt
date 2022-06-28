@@ -76,6 +76,9 @@ github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.5
 ## explicit
 github.com/go-openapi/swag
+# github.com/gofrs/uuid v4.2.0+incompatible
+## explicit
+github.com/gofrs/uuid
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
@@ -127,7 +130,7 @@ github.com/gophercloud/gophercloud/pagination
 ## explicit; go 1.12
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hwameistor/local-storage v0.1.7
+# github.com/hwameistor/local-storage v0.1.10
 ## explicit; go 1.17
 github.com/hwameistor/local-storage/pkg/apis
 github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1
@@ -137,7 +140,7 @@ github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor
 github.com/hwameistor/local-storage/pkg/member/csi
 github.com/hwameistor/local-storage/pkg/member/node/storage
 github.com/hwameistor/local-storage/pkg/utils
-# github.com/hwameistor/reliable-helper-system v0.0.4
+# github.com/hwameistor/reliable-helper-system v0.0.6
 ## explicit; go 1.17
 github.com/hwameistor/reliable-helper-system/pkg/apis
 github.com/hwameistor/reliable-helper-system/pkg/apis/hwameistor/v1alpha1

@@ -343,6 +343,8 @@ github.com/gobwas/glob v0.2.3/go.mod h1:d3Ez4x06l9bZtSvzIay5+Yzi0fmZzPgnTbPcKjJA
 github.com/gocql/gocql v0.0.0-20190301043612-f6df8288f9b4/go.mod h1:4Fw1eo5iaEhDUs8XyuhSVCVy52Jq3L+/3GJgYkwc+/0=
 github.com/godbus/dbus v0.0.0-20190422162347-ade71ed3457e/go.mod h1:bBOAhwG1umN6/6ZUMtDFBMQR8jRg9O75tm9K00oMsK4=
 github.com/gofrs/flock v0.7.1/go.mod h1:F1TvTiK9OcQqauNUHlbJvyl9Qa1QvF/gOUDKA14jxHU=
+github.com/gofrs/uuid v4.2.0+incompatible h1:yyYWMnhkhrKwwr8gAOcOCYxOOscHgDS9yZgBrnJfGa0=
+github.com/gofrs/uuid v4.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/gogo/protobuf v0.0.0-20171007142547-342cbe0a0415/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.2.0/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
@@ -487,10 +489,10 @@ github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/J
 github.com/hashicorp/serf v0.8.5/go.mod h1:UpNcs7fFbpKIyZaUuSW6EPiH+eZC7OuyFD+wc1oal+k=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/xstrings v1.3.1/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
-github.com/hwameistor/local-storage v0.1.7 h1:Nf4H5BHpKy86kUD1W8OAbPj7Rf7zC882x/N3ZZL15lc=
-github.com/hwameistor/local-storage v0.1.7/go.mod h1:6xx9MMAmU/nz9O+wDEYuY3hmlnzghLyTPHDROx8lLBc=
-github.com/hwameistor/reliable-helper-system v0.0.4 h1:NcS0gpqu6jZ9O2EBr5QHTR1+wzbg/u3WxS/KBZAgx+c=
-github.com/hwameistor/reliable-helper-system v0.0.4/go.mod h1:OXjS+L6sFbBMp+jbKoo8UJmZOML97Fw3kkroIT22FXU=
+github.com/hwameistor/local-storage v0.1.10 h1:WKPh4EfuP+jJojHRe7ckAB39IsrsdGgG5SqY5HKwom0=
+github.com/hwameistor/local-storage v0.1.10/go.mod h1:Vl3bJdoJwwBeiMz7PnS6wO5YuKwrPwb3bdpoAbgH+Ns=
+github.com/hwameistor/reliable-helper-system v0.0.6 h1:hWU9Lk+uwDm92RQhohaMF9nPm7IRmKj60Xfoep8qWQY=
+github.com/hwameistor/reliable-helper-system v0.0.6/go.mod h1:EVJ5jt0Y5+fG2ImdusycKpGmBwZTPB0/DqclnT2n2bo=
 github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365/go.mod h1:SK73tn/9oHe+/Y0h39VT4UCxmurVJkR5NA7kMEAOgSE=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=

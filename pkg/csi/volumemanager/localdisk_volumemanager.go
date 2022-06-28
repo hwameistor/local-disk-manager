@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/hwameistor/local-disk-manager/pkg/csi/diskmanager"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-disk-manager/pkg/builder/localdiskvolume"
-	volumectr "github.com/hwameistor/local-disk-manager/pkg/controller/localdiskvolume"
-	"github.com/hwameistor/local-disk-manager/pkg/csi/diskmanager"
+	volumectr "github.com/hwameistor/local-disk-manager/pkg/handler/localdiskvolume"
 	"github.com/hwameistor/local-disk-manager/pkg/utils"
 	"github.com/hwameistor/local-disk-manager/pkg/utils/kubernetes"
 	log "github.com/sirupsen/logrus"
@@ -26,10 +27,11 @@ const (
 
 // consts
 const (
-	VolumeParameterDiskTypeKey    = "diskType"
-	VolumeParameterMinCapacityKey = "minCap"
-	VolumeParameterPVCNameKey     = "csi.storage.k8s.io/pvc/name"
-	VolumeSelectedNodeKey         = "volume.kubernetes.io/selected-node"
+	VolumeParameterDiskTypeKey     = "diskType"
+	VolumeParameterMinCapacityKey  = "minCap"
+	VolumeParameterPVCNameKey      = "csi.storage.k8s.io/pvc/name"
+	VolumeParameterPVCNameSpaceKey = "csi.storage.k8s.io/pvc/namespace"
+	VolumeSelectedNodeKey          = "volume.kubernetes.io/selected-node"
 )
 
 // LocalDiskVolumeManager manage the allocation, deletion and query of local disk data volumes.
@@ -66,6 +68,9 @@ type VolumeRequest struct {
 	// PVCName
 	PVCName string `json:"pvcName"`
 
+	// PVCNameSpace
+	PVCNameSpace string `json:"pvcNameSpace"`
+
 	// OwnerNodeName represents where this disk volume located
 	OwnerNodeName string `json:"ownerNodeName"`
 
@@ -88,6 +93,10 @@ func (r *VolumeRequest) SetRequireCapacity(cap int64) {
 
 func (r *VolumeRequest) SetPVCName(pvc string) {
 	r.PVCName = pvc
+}
+
+func (r *VolumeRequest) SetPVCNameSpace(ns string) {
+	r.PVCNameSpace = ns
 }
 
 func (r *VolumeRequest) SetNodeName(nodeName string) {
@@ -128,26 +137,32 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 		log.WithError(err).Error("Failed to ParseVolumeRequest")
 		return nil, err
 	}
+	logCtx := log.Fields{
+		"volume":           name,
+		"node":             r.OwnerNodeName,
+		"pvcNamespaceName": r.PVCNameSpace + "/" + r.PVCName}
 
-	// select a free disk
-	selDisk, err := vm.dm.SelectFreeDisk(diskmanager.Disk{
-		AttachNode: r.OwnerNodeName,
-		Capacity:   r.RequireCapacity,
-		DiskType:   r.DiskType,
-	})
+	// get reserved disk for the volume
+	reservedDisk, err := vm.dm.GetReservedDiskByPVC(r.PVCNameSpace + "-" + r.PVCName)
 	if err != nil {
-		log.WithError(err).Error("Failed to select free disk")
+		log.WithError(err).Error("failed to get reserved disk")
 		return nil, err
 	}
+	if reservedDisk == nil {
+		err = fmt.Errorf("there is no disk reserved by pvc")
+		log.WithFields(logCtx).WithError(err).Error(err)
+		return nil, err
+	}
+	log.WithFields(logCtx).Debugf("get reserve disk %s success", reservedDisk.Name)
 
 	// create LocalDiskVolume if not exist
 	volume, err := localdiskvolume.NewBuilder().WithName(name).
-		SetupPVCName(r.PVCName).
 		SetupDiskType(r.DiskType).
-		SetupDisk(selDisk.DevPath).
-		SetupLocalDiskName(selDisk.Name).
-		SetupAllocateCap(selDisk.Capacity).
+		SetupDisk(reservedDisk.DevPath).
+		SetupLocalDiskName(reservedDisk.Name).
+		SetupAllocateCap(reservedDisk.Capacity).
 		SetupRequiredCapacityBytes(r.RequireCapacity).
+		SetupPVCNameSpaceName(r.PVCNameSpace + "/" + r.PVCName).
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Node: r.OwnerNodeName}).
 		SetupStatus(v1alpha1.VolumeStateCreated).Build()
 	if err != nil {
@@ -158,6 +173,12 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 	v, err := vm.createVolume(volume)
 	if err != nil {
 		log.WithError(err).Error("Failed to create volume")
+		return nil, err
+	}
+
+	// fixme: auto-detect disk status is a better way
+	if err = vm.dm.ClaimDisk(volume.Status.LocalDiskName); err != nil {
+		log.WithError(err).Errorf("Failed to update localdisk %s status to InUse", volume.Status.LocalDiskName)
 		return nil, err
 	}
 
@@ -190,13 +211,19 @@ func (vm *LocalDiskVolumeManager) UpdateVolume(name string, parameters interface
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Node: r.OwnerNodeName}).
 		SetupRequiredCapacityBytes(r.RequireCapacity).
 		SetupDiskType(r.DiskType).
-		SetupPVCName(r.PVCName).Build()
+		SetupPVCNameSpaceName(r.PVCNameSpace + "/" + r.PVCName).Build()
 	if err != nil {
 		return nil, err
 	}
 
 	v, err := vm.updateVolume(newVolume)
 	if err != nil {
+		return nil, err
+	}
+
+	// fixme: auto-detect disk status is a better way
+	if err = vm.dm.ClaimDisk(newVolume.Status.LocalDiskName); err != nil {
+		log.WithError(err).Errorf("Failed to update localdisk %s status to InUse", volume.Status.LocalDiskName)
 		return nil, err
 	}
 
@@ -286,6 +313,8 @@ func (vm *LocalDiskVolumeManager) DeleteVolume(ctx context.Context, name string)
 		return err
 	}
 
+	// fixme: The ToBeDeleted status seems a little redundant, and nothing is actually done.
+	//  If it is to check the status of the data volume associated with the disk, it seems that the mount point is enough
 	// 1.1 update volume state to ToBeDeleted
 	// this step is ensure all mountpoints are safely umount
 	volume.SetupVolumeStatus(v1alpha1.VolumeStateToBeDeleted)
@@ -431,6 +460,7 @@ func (vm *LocalDiskVolumeManager) ParseVolumeRequest(parameters interface{}) (*V
 
 	volumeRequest.SetDiskType(r.GetParameters()[VolumeParameterDiskTypeKey])
 	volumeRequest.SetPVCName(r.GetParameters()[VolumeParameterPVCNameKey])
+	volumeRequest.SetPVCNameSpace(r.GetParameters()[VolumeParameterPVCNameSpaceKey])
 	if r.AccessibilityRequirements != nil &&
 		len(r.AccessibilityRequirements.Requisite) == 1 {
 		if nodeName, ok := r.AccessibilityRequirements.Requisite[0].Segments[TopologyNodeKey]; ok {

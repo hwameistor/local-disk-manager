@@ -71,7 +71,7 @@ release:
 _gen-apis:
 	${OPERATOR_CMD} generate k8s
 	${OPERATOR_CMD} generate crds
-	GOPROXY=https://goproxy.cn,direct /code-generator/generate-groups.sh all github.com/hwameistor/local-disk-manager/pkg/apis/client github.com/hwameistor/local-disk-manager/pkg/apis "hwameistor:v1alpha1" --go-header-file /go/src/github.com/hwameistor/local-disk-manager/build/boilerplate.go.txt
+	bash hack/update-codegen.sh
 
 .PHONY: apis
 apis:
@@ -91,7 +91,7 @@ clean:
 
 .PHONY: unit-test
 unit-test:
-	bash test/unit-test.sh
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
 	curl -s https://codecov.io/bash | bash
 
 .PHONY: e2e-test

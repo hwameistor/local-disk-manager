@@ -12,12 +12,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.AfterSuite(func() {
-	output := runInLinux("sh deletedisk.sh")
-	logrus.Info("delete disk", output)
-})
-
-var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
+var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
@@ -26,10 +21,11 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
 			configureEnvironment(ctx)
 		})
 		ginkgo.It("Check existed Local Disk", func() {
+			time.Sleep(2 * time.Minute)
 			localDiskList := &ldv1.LocalDiskList{}
 			err := client.List(ctx, localDiskList)
 			if err != nil {
-				f.ExpectNoError(err)
+				logrus.Error(err)
 			}
 			logrus.Printf("There are %d local volumes ", len(localDiskList.Items))
 			gomega.Expect(len(localDiskList.Items)).To(gomega.Equal(9))
@@ -53,7 +49,6 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
 			})
 			if err != nil {
 				logrus.Error("Manage new disks error", err)
-				f.ExpectNoError(err)
 			}
 			gomega.Expect(err).To(gomega.BeNil())
 
@@ -72,5 +67,8 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), func() {
 			uninstallHelm()
 		})
 	})
-
+	ginkgo.AfterAll(func() {
+		output := runInLinux("sh deletedisk.sh")
+		logrus.Info("delete disk", output)
+	})
 })

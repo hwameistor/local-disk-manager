@@ -17,7 +17,7 @@ import (
 	runtime2 "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/hwameistor/local-disk-manager/pkg/controller"
-	"github.com/hwameistor/local-disk-manager/pkg/csi/driver"
+	csidriver "github.com/hwameistor/local-disk-manager/pkg/csi/driver"
 	"github.com/hwameistor/local-disk-manager/pkg/disk"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 
@@ -49,7 +49,7 @@ var (
 	metricsHost               = "0.0.0.0"
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
-	csiCfg              driver.Config
+	csiCfg              csidriver.Config
 )
 var log = logf.Log.WithName("cmd")
 
@@ -117,8 +117,10 @@ func main() {
 	log.Info("starting monitor disk")
 	go disk.NewController(nodeMgr).StartMonitor()
 
-	log.Info("starting Disk CSI Driver")
-	go driver.NewDiskDriver(csiCfg).Run()
+	if csiCfg.Enable {
+		log.Info("starting Disk CSI Driver")
+		go csidriver.NewDiskDriver(csiCfg).Run()
+	}
 
 	ctx := context.TODO()
 	// Add the Metrics Service
@@ -247,10 +249,11 @@ func setupLogging() {
 
 func registerCSIParams() {
 	flag.StringVar(&csiCfg.Endpoint, "endpoint", "unix://csi/csi.sock", "CSI endpoint")
-	flag.StringVar(&csiCfg.DriverName, "drivername", "disk.hwameistor.io", "name of the driver")
+	flag.StringVar(&csiCfg.DriverName, "drivername", "disk.hwameistor.io", "name of the csidriver")
 	flag.StringVar(&csiCfg.NodeID, "nodeid", "", "node id")
+	flag.BoolVar(&csiCfg.Enable, "csi-enable", false, "enable disk CSI Driver")
 
-	(&csiCfg).VendorVersion = driver.VendorVersion
+	(&csiCfg).VendorVersion = csidriver.VendorVersion
 }
 
 func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
