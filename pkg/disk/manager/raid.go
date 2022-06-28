@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hwameistor/local-disk-manager/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/wxnacy/wgo/arrays"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,9 +27,7 @@ type RaidParser struct {
 
 type RaidType string
 
-const (
-	RaidModel = "MR9361-8i"
-)
+var RaidModels = []string{"MR9361-8i"}
 
 const (
 	RaidType0 RaidType = "RAID0"
@@ -92,9 +91,8 @@ func NewRaidParser(disk *DiskIdentify) RaidParser {
 func (rp RaidParser) ParseRaidInfo(attr Attribute) RaidInfo {
 	log.Infof("ParseRaidInfo = %v, attr.Model = %v", attr, attr.Model)
 	var ri RaidInfo
-	if attr.Model == RaidModel {
+	if arrays.ContainsString(RaidModels, attr.Model) != -1 {
 		// only deals with raid5
-		//dgoutput, err := utils.Bash(fmt.Sprintf("storcli  /c0 /vall show | grep %s |awk '{print $1}' | cut -b 1", RaidType5))
 		dgoutput, err := utils.Bash(fmt.Sprintf("storcli  /c0 /vall show | grep %s", RaidType5))
 		log.Debug("ParseRaidInfo /vall DG= %v", dgoutput)
 
@@ -136,7 +134,6 @@ func (rp RaidParser) ParseRaidInfo(attr Attribute) RaidInfo {
 		for i := 0; i < escountint; i++ {
 			esoutput, err := utils.Bash(fmt.Sprintf("storcli  /c0 /eall /sall show | grep %s:%s | awk '{print $1,$2,$3,$4,$5,$7,$8,$12}' ", "252", strconv.Itoa(i)))
 			log.Debug("ParseRaidInfo output /eall /sall esoutput = %v", esoutput)
-
 			if err != nil {
 				log.Errorf("ParseRaidInfo  /eall /sall  err = %v", err)
 			}

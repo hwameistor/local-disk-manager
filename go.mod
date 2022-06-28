@@ -21,6 +21,7 @@ require (
 require (
 	github.com/container-storage-interface/spec v1.3.0
 	github.com/kubernetes-csi/csi-lib-utils v0.7.1
+	github.com/wxnacy/wgo v1.0.4
 	google.golang.org/grpc v1.27.0
 	k8s.io/code-generator v0.18.6
 )

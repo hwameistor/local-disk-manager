@@ -100,10 +100,8 @@ func (ctr Controller) HandleRaidEvent() {
 						log.WithError(err).Error("HandleRaidEvent: Failed to getLocalDiskByDiskName")
 						return
 					}
-					log.Debug("HandleRaidEvent oldLocalDisk before = %v", oldLocalDisk)
 
 					var newRaidDiskList []ldm.RaidDisk
-
 					for _, raidDisk := range oldLocalDisk.Spec.RAIDInfo.RaidDiskList {
 						if raidDisk.SlotNo == replacedisk.Spec.SltId && raidDisk.EnclosureDeviceID == replacedisk.Spec.EID {
 							if strings.Contains(output, string(ldm.RAIDDiskStateRbld)) || strings.Contains(output, string(ldm.RAIDDiskStateMissing)) {
@@ -119,8 +117,6 @@ func (ctr Controller) HandleRaidEvent() {
 						newRaidDiskList = append(newRaidDiskList, raidDisk)
 					}
 					oldLocalDisk.Spec.RAIDInfo.RaidDiskList = newRaidDiskList
-
-					log.Debug("HandleRaidEvent oldLocalDisk after = %v", oldLocalDisk)
 
 					if err := ctr.localDiskController.UpdateLocalDisk(oldLocalDisk); err != nil {
 						log.WithError(err).Errorf("Update LocalDisk fail for disk %v", oldLocalDisk)
