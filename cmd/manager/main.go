@@ -27,6 +27,7 @@ import (
 
 	"github.com/hwameistor/local-disk-manager/pkg/apis"
 	"github.com/hwameistor/local-disk-manager/version"
+	isv1alpha1 "github.com/hwameistor/reliable-helper-system/pkg/apis"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -103,6 +104,11 @@ func main() {
 	nodeMgr, err := newNodeManager(cfg)
 	if err != nil {
 		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	if err := isv1alpha1.AddToScheme(nodeMgr.GetScheme()); err != nil {
+		log.Error(err, "Failed to setup scheme for reliable helper system resources")
 		os.Exit(1)
 	}
 

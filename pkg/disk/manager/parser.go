@@ -38,6 +38,7 @@ func (dp *DiskParser) ParseDisk() DiskInfo {
 	disk := DiskInfo{DiskIdentify: *dp.DiskIdentify}
 	disk.Attribute = dp.AttributeParser.ParseDiskAttr()
 	disk.Partitions = dp.PartitionParser.ParsePartitionInfo()
+	disk.Raid = dp.RaidParser.ParseRaidInfo(disk.Attribute)
 
 	return disk
 }

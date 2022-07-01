@@ -3,7 +3,8 @@ module github.com/hwameistor/local-disk-manager
 go 1.17
 
 require (
-	github.com/hwameistor/local-storage v0.1.6
+	github.com/hwameistor/local-storage v0.1.10
+	github.com/hwameistor/reliable-helper-system v0.0.7
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.17.0
 	github.com/operator-framework/operator-sdk v0.18.2
@@ -20,6 +21,7 @@ require (
 require (
 	github.com/container-storage-interface/spec v1.3.0
 	github.com/kubernetes-csi/csi-lib-utils v0.7.1
+	github.com/wxnacy/wgo v1.0.4
 	google.golang.org/grpc v1.27.0
 	k8s.io/code-generator v0.18.6
 )
@@ -48,7 +50,8 @@ require (
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
 	github.com/go-openapi/spec v0.19.3 // indirect
 	github.com/go-openapi/swag v0.19.5 // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/gofrs/uuid v4.2.0+incompatible // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

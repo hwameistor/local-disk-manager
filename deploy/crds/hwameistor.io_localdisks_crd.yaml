@@ -170,9 +170,31 @@ spec:
               raidInfo:
                 description: RAIDInfo contains RAID information
                 properties:
-                  raidMaster:
+                  raidDiskList:
+                    description: PD LIST
+                    items:
+                      properties:
+                        deviceID:
+                          type: string
+                        driveGroup:
+                          type: string
+                        enclosureDeviceID:
+                          type: string
+                        mediaType:
+                          type: string
+                        raidDiskState:
+                          type: string
+                        slotNo:
+                          type: string
+                      type: object
+                    type: array
+                  raidName:
                     description: RAIDMaster is the master of the RAID disk, it works
-                      for only RAID slave disk, e.g. /dev/bus/0
+                      for only RAID slave disk, e.g. /dev/bus/0 RaidMaster string    `json:"raidMaster,omitempty"`
+                    type: string
+                  raidState:
+                    type: string
+                  raidType:
                     type: string
                 type: object
               smartInfo:
