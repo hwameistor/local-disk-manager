@@ -1,3 +1,7 @@
+[DEPRECATED] 
+
+The code has been move to https://github.com/hwameistor/hwameistor.
+
 # Local Disk Manager (LDM)
 <img width="150" align='right' alt="Hwameistor Logo" src="https://avatars.githubusercontent.com/u/98022243?s=200&v=4">
 
